@@ -30,6 +30,61 @@ def sizeof_state_dict(state_dict):
         size_in_bytes += 4*tensor_dim  # conversion to bytes
     return size_in_bytes
 
+def append_configs_list(list_of_configs, mode): 
+    """Appends config list based on mode parameter
+
+        Parameters
+        ----------
+        list_of_configs : list
+            The existing list of configs to be included in the profiling process
+        mode: str
+            "CoCoFL" adds all configs that train consecutive blocks
+            "Full" training full network multiple times to ensure low noise measurement
+
+        Raises
+        ------
+        ValueError
+            If mode is not one of the allowed values
+
+        """
+    if mode not in ["CoCoFL", "Full"]:
+        raise ValueError("mode must be one of CoCoFL, Full")
+    
+    if mode == "CoCoFL":
+        for k in range(1, model.n_freezable_layers()):
+            for i in range(0, model.n_freezable_layers()):
+                config = list(range(0, model.n_freezable_layers()))
+
+                try:
+                    for _ in range(k):
+                        config.pop(i)
+                except IndexError:
+                    continue
+                list_of_configs.append(({"freeze": config}))
+    elif mode == "Full":
+        # Ensure that full training has a low noise measurement
+        for i in range(10):
+            list_of_configs.append(({"freeze": []}))
+        
+    return list_of_configs
+
+def append_configs_list_unit(list_of_configs, n_blocks):
+    for i in range(2,10):
+        inc = round(n_blocks/i)
+        j = 0
+        while j < n_blocks:
+            config = list(range(0, n_blocks))
+            if (j + inc) > n_blocks:
+                for k in range(j,n_blocks):
+                    config.pop(j)
+            else:
+                for k in range(j,(j+inc)):
+                    config.pop(j)
+            list_of_configs.append(({"freeze": config}))
+            j += inc
+    return list_of_configs
+    
+
 
 def profile(model_class, model_kwargs, model_state_dict_path, q, n_batches=16):
     # set number of threads torch can use
@@ -92,6 +147,8 @@ if __name__ == "__main__":
     parser.add_argument("--network", default="MobileNet", type=str, choices=["MobileNet", "MobileNetGroupNorm", "MobileNetLarge", "DenseNet", "ResNet18", "ResNet50", "Transformer"], help="NN model selection")
     parser.add_argument("--architecture", default="x64", type=str, choices=["x64", "arm"], help="Selects hardware architecture")
     parser.add_argument("--epochs", type=int, default=1, help="Selects how many profiling epochs are performed (more epochs reduce noise but require more time)")
+    parser.add_argument("--mode", default="CoCoFL", type=str, choices=["CoCoFL", "unit"], help="CoCoFL generates profiling for all consecutive layer training configurations, unit creates them for non-overlapping network partitions")
+
 
     args = parser.parse_args()
     print(args)
@@ -130,26 +187,19 @@ if __name__ == "__main__":
 
     print(model)
     print(model_state_dict_path)
-    file_string_prefix = f"profiling/profiling__CoCoFL_{args.architecture}_{args.network}"
+    file_string_prefix = f"profiling/profiling__{args.mode}_{args.architecture}_{args.network}"
     print(file_string_prefix)
 
     list_of_configs = []
 
-    for k in range(1, model.n_freezable_layers()):
-        for i in range(0, model.n_freezable_layers()):
-            config = list(range(0, model.n_freezable_layers()))
-
-            try:
-                for _ in range(k):
-                    config.pop(i)
-            except IndexError:
-                continue
-            list_of_configs.append(({"freeze": config}))
-
-    # Ensure that full training has a low noise measurement
-    for i in range(10):
-        list_of_configs.append(({"freeze": []}))
-
+    #list_of_configs = append_configs_list(list_of_configs, mode="CoCoFL")
+    if args.mode == "CoCoFL":
+        list_of_configs = append_configs_list(list_of_configs, mode="Full")
+        list_of_configs = append_configs_list(list_of_configs, mode="CoCoFL")
+    else:
+        list_of_configs = append_configs_list(list_of_configs, mode="Full")
+        list_of_configs = append_configs_list_unit(list_of_configs, model.n_freezable_layers())
+    print("here")
     # Shuffle configurations
     random.shuffle(list_of_configs)
 
