@@ -264,7 +264,7 @@ if __name__ == "__main__":
     with open(file_str, "r") as fd:
         profiling_json = json.load(fd)
 
-    table_string = f"profiling/table__CoCoFL_{args.architecture}_{args.network}.json"
+    table_string = f"profiling/table__{args.mode}_{args.architecture}_{args.network}.json"
 
     out = []
     max_time, max_up = 0.0, 0
