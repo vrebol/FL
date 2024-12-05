@@ -17,7 +17,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='FL Training')
     parser.add_argument("--session_tag", type=str, default="default_session", help="Sets name of subfolder for experiments")
     parser.add_argument("--algorithm", type=str, default="FedAvg",
-                        choices=['CoCoFL', 'Centralized', 'FedAvg', 'FedAvgDropDevices'], help="Choice of algorithm")
+                        choices=['CoCoFL', 'Centralized', 'FedAvg', 'FedAvgDropDevices', 'Unit'], help="Choice of algorithm")
     parser.add_argument("--dataset", type=str, choices=["CIFAR10", "CIFAR100", "CINIC10",
                                                         "FEMNIST", "IMDB", "XCHEST", "SHAKESPEARE"], default="CIFAR10", help="Datasets (not all dataset/network combinations are possible)")
     parser.add_argument("--seed", type=int, default=11, help="Sets random seed for experiment")
@@ -25,6 +25,8 @@ if __name__ == "__main__":
                                               'Transformer', 'TransformerSeq2Seq', 'MobileNetLarge'], default="MobileNet", help="NN for experiement")
     parser.add_argument("--n_devices", type=int, default=100, help="Number of total FL devices")
     parser.add_argument("--n_devices_per_round", type=int, default=10, help="Number of FL devices active in one round")
+    parser.add_argument("--n_device_clusters", type=int, default=0, help="Number of FL device clusters (> 0 works only with Unit algorithm)")
+
     parser.add_argument("--data_distribution", type=str, choices=['IID', 'NONIID', 'RCNONIID'], default="IID")
     parser.add_argument("--lr", type=float, default=0.1, help="Learning rate")
     parser.add_argument("--lr_schedule", nargs="+", type=int, default=[600, 800], help="Learning Rate Schedule (LR is reduced by 10x per step)")
@@ -112,12 +114,17 @@ if __name__ == "__main__":
     elif args.algorithm == 'Centralized':
         from algorithms.centralized import CentralizedServer
         flserver = CentralizedServer(run_path)
+    elif args.algorithm == 'Unit':
+        if args.n_device_clusters < 2:
+            raise ValueError(args.n_device_clusters)
+        from algorithms.unit import UnitServer
+        flserver = UnitServer(run_path,args.n_device_clusters)
 
     from utils.resources import DeviceResources, Constant, Uniform
 
     # Implementation of strong/medium/weak scheme
     device_constraints = [DeviceResources() for _ in range(args.n_devices)]
-    if args.algorithm in ['CoCoFL', 'FedAvgDropDevices']:
+    if args.algorithm in ['CoCoFL', 'FedAvgDropDevices','Unit']:
         for resource in device_constraints[0:int(0.33*args.n_devices)]:
             resource.set_all(Constant(1.0), Constant(1.0), Constant(1.0))
         for resource in device_constraints[int(0.33*args.n_devices):int(0.66*args.n_devices)]:
@@ -193,7 +200,7 @@ if __name__ == "__main__":
             from nets.Baseline.ResNet.resnet import ResNet18
             net = ResNet18
             net_eval = ResNet18
-        elif args.algorithm in ['CoCoFL']:
+        elif args.algorithm in ['CoCoFL','Unit']:
             net_eval = baseline_ResNet18
             from nets.QuantizedNets.ResNet.resnet import QResNet18
             net = QResNet18
@@ -204,7 +211,7 @@ if __name__ == "__main__":
             from nets.Baseline.ResNet.resnet import ResNet50
             net = ResNet50
             net_eval = ResNet50
-        elif args.algorithm in ['CoCoFL']:
+        elif args.algorithm in ['CoCoFL','Unit']:
             net_eval = baseline_ResNet50
             from nets.QuantizedNets.ResNet.resnet import QResNet50
             net = QResNet50
@@ -213,7 +220,7 @@ if __name__ == "__main__":
         if args.algorithm in ['Centralized', 'FedAvg', 'FedAvgDropDevices']:
             net_eval = MobileNetV2GroupNorm
             net = MobileNetV2GroupNorm
-        elif args.algorithm in ['CoCoFL']:
+        elif args.algorithm in ['CoCoFL','Unit']:
             from nets.QuantizedNets.MobileNet.mobilenet_norm import QMobileNetGroupNorm
             net_eval = MobileNetV2GroupNorm
             net = QMobileNetGroupNorm
@@ -222,7 +229,7 @@ if __name__ == "__main__":
         if args.algorithm in ['Centralized', 'FedAvg', 'FedAvgDropDevices']:
             net_eval = MobileNetV2Large
             net = MobileNetV2Large
-        elif args.algorithm in ['CoCoFL']:
+        elif args.algorithm in ['CoCoFL','Unit']:
             from nets.QuantizedNets.MobileNet.mobilenet import QMobileNetLarge
             net_eval = MobileNetV2Large
             net = QMobileNetLarge
@@ -232,7 +239,7 @@ if __name__ == "__main__":
         if args.algorithm in ['Centralized', 'FedAvg', 'FedAvgDropDevices']:
             net = baseline_MobileNetV2
             net_eval = baseline_MobileNetV2
-        elif args.algorithm in ['CoCoFL']:
+        elif args.algorithm in ['CoCoFL','Unit']:
             net_eval = baseline_MobileNetV2
             from nets.QuantizedNets.MobileNet.mobilenet import QMobileNet
             net = QMobileNet
@@ -242,7 +249,7 @@ if __name__ == "__main__":
         if args.algorithm in ['Centralized', 'FedAvg', 'FedAvgDropDevices']:
             net = baseline_DenseNet40
             net_eval = baseline_DenseNet40
-        elif args.algorithm in ['CoCoFL']:
+        elif args.algorithm in ['CoCoFL','Unit']:
             net_eval = baseline_DenseNet40
             from nets.QuantizedNets.DenseNet.densenet import QDenseNet40
             net = QDenseNet40
@@ -251,7 +258,7 @@ if __name__ == "__main__":
         net_eval = TransformerSeq2Seq
         if args.algorithm in ['Centralized', 'FedAvg', 'FedAvgDropDevices']:
             net = TransformerSeq2Seq
-        elif args.algorithm in ['CoCoFL']:
+        elif args.algorithm in ['CoCoFL','Unit']:
             from nets.QuantizedNets.Transformer.transformer import QTransformerSeq2Seq
             net = QTransformerSeq2Seq
     elif args.network == 'Transformer':
@@ -260,7 +267,7 @@ if __name__ == "__main__":
         if args.algorithm in ['Centralized', 'FedAvg', 'FedAvgDropDevices']:
             if args.network != 'Transformer': raise ValueError(args.algorithm)
             net = baseline_Transformer
-        elif args.algorithm in ['CoCoFL']:
+        elif args.algorithm in ['CoCoFL','Unit']:
             from nets.QuantizedNets.Transformer.transformer import QTransformer
             net = QTransformer
 
