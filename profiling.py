@@ -68,7 +68,7 @@ def append_configs_list(list_of_configs, mode):
         
     return list_of_configs
 
-def append_configs_list_unit(list_of_configs, n_blocks):
+def append_configs_list_unit(list_of_configs, list_of_units, n_blocks):
     for i in range(2,10):
         inc = round(n_blocks/i)
         j = 0
@@ -81,8 +81,9 @@ def append_configs_list_unit(list_of_configs, n_blocks):
                 for k in range(j,(j+inc)):
                     config.pop(j)
             list_of_configs.append(({"freeze": config}))
+            list_of_units.append(i)
             j += inc
-    return list_of_configs
+    return list_of_configs,list_of_units
     
 
 
@@ -147,7 +148,7 @@ if __name__ == "__main__":
     parser.add_argument("--network", default="MobileNet", type=str, choices=["MobileNet", "MobileNetGroupNorm", "MobileNetLarge", "DenseNet", "ResNet18", "ResNet50", "Transformer"], help="NN model selection")
     parser.add_argument("--architecture", default="x64", type=str, choices=["x64", "arm"], help="Selects hardware architecture")
     parser.add_argument("--epochs", type=int, default=1, help="Selects how many profiling epochs are performed (more epochs reduce noise but require more time)")
-    parser.add_argument("--mode", default="CoCoFL", type=str, choices=["CoCoFL", "unit"], help="CoCoFL generates profiling for all consecutive layer training configurations, unit creates them for non-overlapping network partitions")
+    parser.add_argument("--mode", default="CoCoFL", type=str, choices=["CoCoFL", "Unit"], help="CoCoFL generates profiling for all consecutive layer training configurations, unit creates them for non-overlapping network partitions")
 
 
     args = parser.parse_args()
@@ -196,18 +197,29 @@ if __name__ == "__main__":
     if args.mode == "CoCoFL":
         list_of_configs = append_configs_list(list_of_configs, mode="Full")
         list_of_configs = append_configs_list(list_of_configs, mode="CoCoFL")
+        # Shuffle configurations
+        random.shuffle(list_of_configs)
     else:
+        list_of_units = 10 * [0]
+        print(list_of_units)
         list_of_configs = append_configs_list(list_of_configs, mode="Full")
-        list_of_configs = append_configs_list_unit(list_of_configs, model.n_freezable_layers())
+        list_of_configs, list_of_units = append_configs_list_unit(list_of_configs, list_of_units, model.n_freezable_layers())
+        list_of_configs = list(zip(list_of_configs, list_of_units))
+        print(list_of_configs)
+        random.shuffle(list_of_configs)
+        print(list_of_configs[0][0])
+        #list_of_configs, list_of_units = zip(*zipped)
     print("here")
-    # Shuffle configurations
-    random.shuffle(list_of_configs)
 
     # Repeat configurations based on input args
     list_of_configs *= int(args.epochs)
 
     # Prepare freezing configurations
     for kwargs in tqdm.tqdm(reversed(list_of_configs), total=len(list_of_configs)):
+        if args.mode == "Unit":
+            unit = kwargs[1]
+            kwargs = kwargs[0]
+
         kwargs = copy.deepcopy(kwargs)
 
         file_str = file_string_prefix + ".json"
@@ -248,13 +260,16 @@ if __name__ == "__main__":
                 item["memory"] += [memory]
                 already_there = True
         if not already_there:
-            res.append({"freeze": list(sorted(kwargs["freeze"])),
-                        "time_forward": t_fw,
-                        "time_backward": t_bw,
-                        "max": model.n_freezable_layers(),
-                        "data_down": data_down,
-                        "data_up": data_up,
-                        "memory": [memory]})
+            profiling_entry = {"freeze": list(sorted(kwargs["freeze"])),
+                            "time_forward": t_fw,
+                            "time_backward": t_bw,
+                            "max": model.n_freezable_layers(),
+                            "data_down": data_down,
+                            "data_up": data_up,
+                            "memory": [memory]}
+            if args.mode == "Unit":
+                profiling_entry["unit"] = unit
+            res.append(profiling_entry)
 
         # Save new item in file
         with open(file_str, "w") as fd:
@@ -283,6 +298,7 @@ if __name__ == "__main__":
     for config in data:
         res = {
             "freeze": config["freeze"],
+            "unit": config["unit"],
             "time": round((np.mean(config["time_forward"]) + np.mean(config["time_backward"]))/max_time, 5),
             "data": round(config["data_up"]/max_up, 5),
             "memory": round(np.mean(config["memory"])/max_mem, 5),
