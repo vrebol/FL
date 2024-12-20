@@ -4,11 +4,12 @@ from sklearn.cluster import KMeans
 import logging
 import copy
 import torch
+import numpy as np
 
 
 class UnitDevice(CoCoFLDevice):
     def __init__(self, device_id):
-        super().__init__(self, device_id)
+        super().__init__(device_id)
         self.cluster = None
         self.chunk_index = None
 
@@ -45,10 +46,48 @@ class UnitServer(CoCoFLServer):
     _device_evaluation_class = FedAvgEvaluationDevice
 
     def __init__(self, storage_path, n_device_clusters) -> None:
-        super().__init__(self,storage_path)
-        self._device_clusters = None
+        super().__init__(storage_path)
         self._n_device_clusters = n_device_clusters
+        self.configs = []
 
+    def initialize_clusters(self, device_constraints, n_clusters):
+        device_constraints_numeric = []
+
+        for resource in device_constraints:
+            cur_device_constraints = []
+            cur_device_constraints.append(resource.get_time())
+            cur_device_constraints.append(resource.get_data())
+            cur_device_constraints.append(resource.get_memory())
+            device_constraints_numeric.append(cur_device_constraints)
+
+        device_constraints_numeric = np.array(device_constraints_numeric)
+        kmeans = KMeans(n_clusters=n_clusters, random_state=0, n_init="auto").fit(device_constraints_numeric)
+        
+        unit_list = self._model[0].get_units()
+        # get list of units from the table
+        # run profiling with 3 epochs
+        # push
+        chunk_indices = []
+        for label in np.unique(kmeans.labels_):
+            cluster_constraints = device_constraints_numeric[kmeans.labels_ == label]
+            min_cluster_resources = np.min(cluster_constraints,axis=0) # has to be minimum at every category
+            for unit in reversed(unit_list):
+                if unit == 0:
+                    continue
+                max_unit_resources = self._model[0].get_max_resources(unit)  # model class is the same for all devices 
+                print(max_unit_resources,min_cluster_resources)
+                # if max unit < min cluster for all categories then accept
+                if ((max_unit_resources < min_cluster_resources).all()):
+                    cluster_configs = self._model[0].get_freezing_configs_unit(unit)
+                    # generate array with relevant configs 
+                    self.configs.append(cluster_configs)
+                    # generate starting indices list and in initialize assign to each device as chunk index
+                    chunk_indices.append(np.resize(np.arange(len(cluster_configs)),len(cluster_constraints)))
+                    print(f"Chosen unit for cluster {label}: {unit}")
+                    break
+        # how to know number of configs per unit? just look at length of config 
+        return kmeans.labels_, chunk_indices
+    
     #!overrides
     def initialize(self):
         assert not any([self.split_function,
@@ -65,8 +104,10 @@ class UnitServer(CoCoFLServer):
 
         self._devices_list = [self._device_class(i) for i in range(self.n_devices)]
 
-        self._devices_list = [self._device_class(i) for i in range(self.n_devices)]
-
+        if self._device_constraints is not None:
+            cluster_labels, chunk_indices = self.initialize_clusters(self._device_constraints, self._n_device_clusters)
+ 
+        counter = np.zeros(3,dtype=int)
         for i, device in enumerate(self._devices_list):
             device.set_model(self._model[i], self._model_kwargs[i])
             device.set_train_data(torch.utils.data.Subset(self._train_data.dataset, idxs_list[i]))
@@ -76,6 +117,10 @@ class UnitServer(CoCoFLServer):
 
             if self._device_constraints is not None:
                 device.resources = self._device_constraints[i]
+                cluster_label = cluster_labels[i]
+                device.cluster = cluster_label
+                device.chunk_index = chunk_indices[cluster_label][counter[cluster_label]]
+                counter[cluster_label] = counter[cluster_label] + 1
 
         self._devices_list[0].init_model()
         self._global_model = copy.deepcopy(self._devices_list[0]._model.state_dict())

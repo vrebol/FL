@@ -1,5 +1,6 @@
 import torch
 import copy
+import numpy as np
 
 
 def filter_state_dict_keys(sd, endswith_key_string):
@@ -78,3 +79,24 @@ def filter_table(resources, table, n_blocks):
             out_configs.append(config['freeze'])
     assert out_configs, "[ERROR]: No configuration available for requested resource constraint."
     return out_configs
+
+def filter_unit_max(unit, table):
+    table = copy.deepcopy(table)
+    table = list(filter(lambda x: unit == x['unit'], table))
+    max_entry = np.zeros(3)
+    max_entry[0] = max(table, key=lambda x: x['time'])['time']
+    max_entry[1] = max(table, key=lambda x: x['data'])['data']
+    max_entry[2] = max(table, key=lambda x: x['memory'])['memory']
+    return max_entry
+
+def filter_table_unit(unit,table):
+    table = copy.deepcopy(table)
+    out_configs = list(filter(lambda x: unit == x['unit'], table))
+    out_configs = [ config['freeze'] for config in out_configs ]
+    return out_configs
+
+def get_units(table):
+    table = copy.deepcopy(table)
+    units = {item['unit'] for item in table}
+    units_list = list(units)
+    return units_list
