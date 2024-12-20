@@ -124,7 +124,14 @@ if __name__ == "__main__":
 
     # Implementation of strong/medium/weak scheme
     device_constraints = [DeviceResources() for _ in range(args.n_devices)]
-    if args.algorithm in ['CoCoFL', 'FedAvgDropDevices','Unit']:
+    if args.algorithm == 'Unit':
+        for resource in device_constraints[0:int(0.33*args.n_devices)]:
+            resource.set_all(Constant(1.0), Constant(1.0), Constant(1.0))
+        for resource in device_constraints[int(0.33*args.n_devices):int(0.66*args.n_devices)]:
+            resource.set_all(Constant(0.8), Uniform(0.5, 1.0), Constant(0.85))
+        for resource in device_constraints[int(0.66*args.n_devices):]:
+            resource.set_all(Constant(0.6), Uniform(0.5, 1.0), Constant(0.75))
+    elif args.algorithm in ['CoCoFL', 'FedAvgDropDevices']:
         for resource in device_constraints[0:int(0.33*args.n_devices)]:
             resource.set_all(Constant(1.0), Constant(1.0), Constant(1.0))
         for resource in device_constraints[int(0.33*args.n_devices):int(0.66*args.n_devices)]:

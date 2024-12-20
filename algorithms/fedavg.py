@@ -281,7 +281,7 @@ class FedAvgServer(ABC):
             for j in range(len(self._devices_list)):
                 if i != j:
                     assert set(self._devices_list[i]._train_data.indices.tolist()).isdisjoint(set(
-                            self._devices_list[j]._train_data.indices.tolist())), "Devices do not exclusivly have access to their data!"
+                            self._devices_list[j]._train_data.indices.tolist())), "Devices do not exclusively have access to their data!"
 
     @staticmethod
     def model_averaging(list_of_state_dicts, eval_device_dict=None):
@@ -334,7 +334,7 @@ class FedAvgServer(ABC):
 
         self._devices_list = [self._device_class(i) for i in range(self.n_devices)]
 
-        self._devices_list = [self._device_class(i) for i in range(self.n_devices)]
+        self._devices_list = [self._device_class(i) for i in range(self.n_devices)]  ## DUPLICATE ??
 
         for i, device in enumerate(self._devices_list):
             device.set_model(self._model[i], self._model_kwargs[i])
