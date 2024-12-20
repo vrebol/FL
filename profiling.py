@@ -69,8 +69,15 @@ def append_configs_list(list_of_configs, mode):
     return list_of_configs
 
 def append_configs_list_unit(list_of_configs, list_of_units, n_blocks):
-    for i in range(2,10):
-        inc = round(n_blocks/i)
+    used_units = []
+    inc = 0
+    i = 2
+    while inc != 1:
+        inc = int(n_blocks/i)
+        if inc in used_units:
+            i = i+1
+            continue
+        used_units.append(inc)
         j = 0
         while j < n_blocks:
             config = list(range(0, n_blocks))
@@ -81,8 +88,10 @@ def append_configs_list_unit(list_of_configs, list_of_units, n_blocks):
                 for k in range(j,(j+inc)):
                     config.pop(j)
             list_of_configs.append(({"freeze": config}))
-            list_of_units.append(i)
+            list_of_units.append(inc)
             j += inc
+        i = i+1
+    print(used_units)
     return list_of_configs,list_of_units
     
 
@@ -164,8 +173,9 @@ if __name__ == "__main__":
 
     if "ResNet18" in args.network:
         from nets.QuantizedNets.ResNet.resnet import QResNet18
-        if args.network == "QResNet18": model = QResNet18
-        else: raise ValueError(args.network)
+        model = QResNet18
+        # if args.network == "QResNet18": 
+        # else: raise ValueError(args.network)
     elif args.network == "MobileNet": model = QMobileNet
     elif args.network == "MobileNetGroupNorm": model = QMobileNetGroupNorm
     elif args.network == "MobileNetLarge":
@@ -255,7 +265,6 @@ if __name__ == "__main__":
                 item["time_forward"] += t_fw
                 item["time_backward"] += t_bw
                 item["memory"] += [memory]
-                item["unit"] += [unit]
                 already_there = True
         if not already_there:
             profiling_entry = {"freeze": list(sorted(kwargs["freeze"])),
@@ -266,7 +275,7 @@ if __name__ == "__main__":
                             "data_up": data_up,
                             "memory": [memory]}
             if args.mode == "Unit":
-                profiling_entry["unit"] = [unit]
+                profiling_entry["unit"] = unit
             res.append(profiling_entry)
 
         # Save new item in file
@@ -296,7 +305,7 @@ if __name__ == "__main__":
     for config in data:
         res = {
             "freeze": config["freeze"],
-            "unit": list(set(sorted(config["unit"]))),
+            "unit": config["unit"],
             "time": round((np.mean(config["time_forward"]) + np.mean(config["time_backward"]))/max_time, 5),
             "data": round(config["data_up"]/max_up, 5),
             "memory": round(np.mean(config["memory"])/max_mem, 5),
