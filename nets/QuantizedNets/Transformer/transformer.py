@@ -7,13 +7,19 @@ import torch.nn as nn
 import random
 import json
 
-from nets.QuantizedNets.utils.utils import filter_table
+from nets.QuantizedNets.utils.utils import filter_table, get_units, filter_unit_max, filter_table_unit
 
 with open("nets/QuantizedNets/Transformer/tables/table__CoCoFL_x64_QTransformer.json", "r") as fd:
     _g_table_qtransformer = json.load(fd)
 
 with open("nets/QuantizedNets/Transformer/tables/table__CoCoFL_x64_QTransformerSeq2Seq.json", "r") as fd:
     _g_table_qtransformerseq2seq = json.load(fd)
+
+with open("nets/QuantizedNets/Transformer/tables/table__Unit_x64_QTransformer.json", "r") as fd:
+    _g_table_qtransformer_unit = json.load(fd)
+
+with open("nets/QuantizedNets/Transformer/tables/table__Unit_x64_QTransformerSeq2Seq.json", "r") as fd:
+    _g_table_qtransformerseq2seq_unit = json.load(fd)
 
 
 class QTransformerBase(nn.Module):
@@ -136,6 +142,22 @@ class QTransformer(QTransformerBase):
     def get_freezing_config(resources):
         configs = filter_table(resources, _g_table_qtransformer, QTransformer.n_freezable_layers())
         return random.choice(configs)
+    
+    @staticmethod
+    def get_max_resources(unit):
+        # extract max from unit table 
+        max_resources = filter_unit_max(unit, _g_table_qtransformer_unit)
+        return max_resources
+
+    @staticmethod
+    def get_freezing_configs_unit(unit):
+        configs = filter_table_unit(unit, _g_table_qtransformer_unit)
+        return configs
+    
+    @staticmethod
+    def get_units():
+        units = get_units(_g_table_qtransformer_unit)
+        return units
 
 
 class QTransformerSeq2Seq(QTransformerBase):
@@ -178,3 +200,19 @@ class QTransformerSeq2Seq(QTransformerBase):
     def get_freezing_config(resources):
         configs = filter_table(resources, _g_table_qtransformerseq2seq, QTransformerSeq2Seq.n_freezable_layers())
         return random.choice(configs)
+    
+    @staticmethod
+    def get_max_resources(unit):
+        # extract max from unit table 
+        max_resources = filter_unit_max(unit, _g_table_qtransformerseq2seq_unit)
+        return max_resources
+
+    @staticmethod
+    def get_freezing_configs_unit(unit):
+        configs = filter_table_unit(unit, _g_table_qtransformerseq2seq_unit)
+        return configs
+    
+    @staticmethod
+    def get_units():
+        units = get_units(_g_table_qtransformerseq2seq_unit)
+        return units

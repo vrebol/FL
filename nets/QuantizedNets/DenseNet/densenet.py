@@ -1,4 +1,4 @@
-from nets.QuantizedNets.utils.utils import filter_table
+from nets.QuantizedNets.utils.utils import filter_table, filter_table_unit, filter_unit_max, get_units
 from nets.QuantizedNets.DenseNet.backwards import QBWBottleneck, QBWTransition
 from nets.QuantizedNets.DenseNet.forward import QFWBottleneck, QFWTransition
 from nets.QuantizedNets.DenseNet.training import Bottleneck, Transition
@@ -9,6 +9,10 @@ import json
 
 with open('nets/QuantizedNets/DenseNet/tables/table__CoCoFL_arm_QDenseNet40.json', 'r') as fd:
     _g_table_qdensenet40 = json.load(fd)
+
+with open('nets/QuantizedNets/DenseNet/tables/table__Unit_x64_QDenseNet40.json', 'r') as fd:
+    _g_table_qdensenet40_unit = json.load(fd)
+
 
 
 class QDenseNet(nn.Module):
@@ -147,3 +151,19 @@ class QDenseNet40(QDenseNet):
     def get_freezing_config(resources):
         configs = filter_table(resources, _g_table_qdensenet40, QDenseNet40.n_freezable_layers())
         return random.choice(configs)
+    
+    @staticmethod
+    def get_max_resources(unit):
+        # extract max from unit table 
+        max_resources = filter_unit_max(unit, _g_table_qdensenet40_unit)
+        return max_resources
+
+    @staticmethod
+    def get_freezing_configs_unit(unit):
+        configs = filter_table_unit(unit, _g_table_qdensenet40_unit)
+        return configs
+    
+    @staticmethod
+    def get_units():
+        units = get_units(_g_table_qdensenet40_unit)
+        return units

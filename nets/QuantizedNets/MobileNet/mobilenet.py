@@ -120,6 +120,7 @@ class QMobileNet(QMobileNetBase):
         configs = filter_table_unit(unit, _g_table_qmobilenet_unit)
         return configs
     
+    @staticmethod
     def get_units():
         units = get_units(_g_table_qmobilenet_unit)
         return units

@@ -11,12 +11,18 @@ import torch.nn.functional as F
 import json
 
 from nets.QuantizedNets.ResNet.training import InputLayer
-from nets.QuantizedNets.utils.utils import filter_table
+from nets.QuantizedNets.utils.utils import filter_table, filter_unit_max, filter_table_unit, get_units
 
 with open('nets/QuantizedNets/ResNet/tables/table__CoCoFL_arm_QResNet18.json', 'r') as fd:
     _g_table_qresnet18 = json.load(fd)
 with open('nets/QuantizedNets/ResNet/tables/table__CoCoFL_x64_QResNet50.json', 'r') as fd:
     _g_table_qresnet50 = json.load(fd)
+with open('nets/QuantizedNets/ResNet/tables/table__Unit_x64_ResNet18.json', 'r') as fd:
+    _g_table_qresnet18_unit = json.load(fd)
+with open('nets/QuantizedNets/ResNet/tables/table__Unit_x64_ResNet50TMP.json', 'r') as fd:
+    _g_table_qresnet50_unit = json.load(fd)
+
+
 
 
 class QResNet(nn.Module):
@@ -105,6 +111,22 @@ class QResNet18(QResNet):
         configs = filter_table(resources, _g_table_qresnet18, QResNet18.n_freezable_layers())
         return random.choice(configs)
 
+    @staticmethod
+    def get_max_resources(unit):
+        # extract max from unit table 
+        max_resources = filter_unit_max(unit, _g_table_qresnet18_unit)
+        return max_resources
+
+    @staticmethod
+    def get_freezing_configs_unit(unit):
+        configs = filter_table_unit(unit, _g_table_qresnet18_unit)
+        return configs
+    
+    @staticmethod
+    def get_units():
+        units = get_units(_g_table_qresnet18_unit)
+        return units
+
 
 ### RESNET50 ###
 
@@ -122,3 +144,19 @@ class QResNet50(QResNet):
     def get_freezing_config(resources):
         configs = filter_table(resources, _g_table_qresnet50, QResNet50.n_freezable_layers())
         return random.choice(configs)
+    
+    @staticmethod
+    def get_max_resources(unit):
+        # extract max from unit table 
+        max_resources = filter_unit_max(unit, _g_table_qresnet50_unit)
+        return max_resources
+
+    @staticmethod
+    def get_freezing_configs_unit(unit):
+        configs = filter_table_unit(unit, _g_table_qresnet50_unit)
+        return configs
+    
+    @staticmethod
+    def get_units():
+        units = get_units(_g_table_qresnet50_unit)
+        return units
