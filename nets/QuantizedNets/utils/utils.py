@@ -82,7 +82,7 @@ def filter_table(resources, table, n_blocks):
 
 def filter_unit_max(unit, table):
     table = copy.deepcopy(table)
-    table = list(filter(lambda x: unit == x['unit'], table))
+    table = list(filter(lambda x: unit in x['unit'], table))
     max_entry = np.zeros(3)
     max_entry[0] = max(table, key=lambda x: x['time'])['time']
     max_entry[1] = max(table, key=lambda x: x['data'])['data']
@@ -91,12 +91,12 @@ def filter_unit_max(unit, table):
 
 def filter_table_unit(unit,table):
     table = copy.deepcopy(table)
-    out_configs = list(filter(lambda x: unit == x['unit'], table))
+    out_configs = list(filter(lambda x: unit in x['unit'], table))
     out_configs = [ config['freeze'] for config in out_configs ]
     return out_configs
 
 def get_units(table):
     table = copy.deepcopy(table)
-    units = {item['unit'] for item in table}
+    units = {item['unit'][0] for item in table}
     units_list = list(units)
     return units_list

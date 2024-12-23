@@ -72,6 +72,7 @@ def append_configs_list_unit(list_of_configs, list_of_units, n_blocks):
     used_units = []
     inc = 0
     i = 2
+
     while inc != 1:
         inc = int(n_blocks/i)
         if inc in used_units:
@@ -265,6 +266,7 @@ if __name__ == "__main__":
                 item["time_forward"] += t_fw
                 item["time_backward"] += t_bw
                 item["memory"] += [memory]
+                item["unit"] += [unit]
                 already_there = True
         if not already_there:
             profiling_entry = {"freeze": list(sorted(kwargs["freeze"])),
@@ -275,7 +277,7 @@ if __name__ == "__main__":
                             "data_up": data_up,
                             "memory": [memory]}
             if args.mode == "Unit":
-                profiling_entry["unit"] = unit
+                profiling_entry["unit"] = [unit]
             res.append(profiling_entry)
 
         # Save new item in file
@@ -305,7 +307,7 @@ if __name__ == "__main__":
     for config in data:
         res = {
             "freeze": config["freeze"],
-            "unit": config["unit"],
+            "unit": list(set(sorted(config["unit"]))),
             "time": round((np.mean(config["time_forward"]) + np.mean(config["time_backward"]))/max_time, 5),
             "data": round(config["data_up"]/max_up, 5),
             "memory": round(np.mean(config["memory"])/max_mem, 5),

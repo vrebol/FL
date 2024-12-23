@@ -128,9 +128,9 @@ if __name__ == "__main__":
         for resource in device_constraints[0:int(0.33*args.n_devices)]:
             resource.set_all(Constant(1.0), Constant(1.0), Constant(1.0))
         for resource in device_constraints[int(0.33*args.n_devices):int(0.66*args.n_devices)]:
-            resource.set_all(Constant(0.8), Uniform(0.5, 1.0), Constant(0.85))
+            resource.set_all(Constant(0.8), Uniform(0.5, 1.0), Constant(0.85))  #Uniform(0.5, 1.0)
         for resource in device_constraints[int(0.66*args.n_devices):]:
-            resource.set_all(Constant(0.6), Uniform(0.5, 1.0), Constant(0.75))
+            resource.set_all(Constant(0.62), Uniform(0.5, 1.0), Constant(0.75))
     elif args.algorithm in ['CoCoFL', 'FedAvgDropDevices']:
         for resource in device_constraints[0:int(0.33*args.n_devices)]:
             resource.set_all(Constant(1.0), Constant(1.0), Constant(1.0))
