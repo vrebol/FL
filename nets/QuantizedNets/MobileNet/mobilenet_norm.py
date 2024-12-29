@@ -1,4 +1,4 @@
-from nets.QuantizedNets.utils.utils import filter_table
+from nets.QuantizedNets.utils.utils import filter_table, filter_unit_max, get_units, filter_table_unit
 from nets.QuantizedNets.MobileNet.backward import QBWBlockGroupNorm
 from nets.QuantizedNets.MobileNet.forward import QFWBlockGroupNorm
 from nets.QuantizedNets.MobileNet.training import BlockGroupNorm
@@ -12,6 +12,8 @@ import json
 
 with open('nets/QuantizedNets/MobileNet/tables/table__CoCoFL_x64_QMobileNetGroupNorm.json', 'r') as fd:
     _g_table_qmobilenet = json.load(fd)
+with open('nets/QuantizedNets/MobileNet/tables/table__Unit_x64_MobileNetGroupNorm.json', 'r') as fd:
+    _g_table_qmobilenet_unit = json.load(fd)
 
 
 class QMobileNetBase(nn.Module):
@@ -106,3 +108,19 @@ class QMobileNetGroupNorm(QMobileNetBase):
     def get_freezing_config(resources):
         configs = filter_table(resources, _g_table_qmobilenet, QMobileNetGroupNorm.n_freezable_layers())
         return random.choice(configs)
+    
+    @staticmethod
+    def get_max_resources(unit):
+        # extract max from unit table 
+        max_resources = filter_unit_max(unit, _g_table_qmobilenet_unit)
+        return max_resources
+
+    @staticmethod
+    def get_freezing_configs_unit(unit):
+        configs = filter_table_unit(unit, _g_table_qmobilenet_unit)
+        return configs
+    
+    @staticmethod
+    def get_units():
+        units = get_units(_g_table_qmobilenet_unit)
+        return units

@@ -10,7 +10,7 @@ import json
 with open('nets/QuantizedNets/DenseNet/tables/table__CoCoFL_arm_QDenseNet40.json', 'r') as fd:
     _g_table_qdensenet40 = json.load(fd)
 
-with open('nets/QuantizedNets/DenseNet/tables/table__Unit_x64_QDenseNet40.json', 'r') as fd:
+with open('nets/QuantizedNets/DenseNet/tables/table__Unit_x64_DenseNet.json', 'r') as fd:
     _g_table_qdensenet40_unit = json.load(fd)
 
 

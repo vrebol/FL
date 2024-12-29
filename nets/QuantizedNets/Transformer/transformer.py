@@ -15,10 +15,10 @@ with open("nets/QuantizedNets/Transformer/tables/table__CoCoFL_x64_QTransformer.
 with open("nets/QuantizedNets/Transformer/tables/table__CoCoFL_x64_QTransformerSeq2Seq.json", "r") as fd:
     _g_table_qtransformerseq2seq = json.load(fd)
 
-with open("nets/QuantizedNets/Transformer/tables/table__Unit_x64_QTransformer.json", "r") as fd:
+with open("nets/QuantizedNets/Transformer/tables/table__Unit_x64_QTransformerTMP.json", "r") as fd:
     _g_table_qtransformer_unit = json.load(fd)
 
-with open("nets/QuantizedNets/Transformer/tables/table__Unit_x64_QTransformerSeq2Seq.json", "r") as fd:
+with open("nets/QuantizedNets/Transformer/tables/table__Unit_x64_QTransformerSeq2SeqTMP.json", "r") as fd:
     _g_table_qtransformerseq2seq_unit = json.load(fd)
 
 

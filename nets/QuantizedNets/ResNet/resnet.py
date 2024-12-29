@@ -19,7 +19,7 @@ with open('nets/QuantizedNets/ResNet/tables/table__CoCoFL_x64_QResNet50.json', '
     _g_table_qresnet50 = json.load(fd)
 with open('nets/QuantizedNets/ResNet/tables/table__Unit_x64_ResNet18.json', 'r') as fd:
     _g_table_qresnet18_unit = json.load(fd)
-with open('nets/QuantizedNets/ResNet/tables/table__Unit_x64_ResNet50TMP.json', 'r') as fd:
+with open('nets/QuantizedNets/ResNet/tables/table__Unit_x64_ResNet50.json', 'r') as fd:
     _g_table_qresnet50_unit = json.load(fd)
 
 
