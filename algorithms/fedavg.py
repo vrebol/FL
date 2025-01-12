@@ -298,6 +298,12 @@ class FedAvgServer(ABC):
     # FedAvg performs random device selection
     def pre_round(self, round_n, rng):
         return self.random_device_selection(self.n_devices, self.n_devices_per_round, rng)
+    
+    def init_nn_models(self,idxs):
+        for dev_idx in idxs:
+            self._devices_list[dev_idx].init_model()
+            self._devices_list[dev_idx].set_model_state_dict(self._global_model)
+        return
 
     def post_round(self, round_n, idxs):
         used_devices = [self._devices_list[i] for i in idxs]
@@ -334,8 +340,6 @@ class FedAvgServer(ABC):
 
         self._devices_list = [self._device_class(i) for i in range(self.n_devices)]
 
-        self._devices_list = [self._device_class(i) for i in range(self.n_devices)]  ## DUPLICATE ??
-
         for i, device in enumerate(self._devices_list):
             device.set_model(self._model[i], self._model_kwargs[i])
             device.set_train_data(torch.utils.data.Subset(self._train_data.dataset, idxs_list[i]))
@@ -367,15 +371,13 @@ class FedAvgServer(ABC):
             idxs = self.pre_round(round_n, rng)
 
             # init NN models
-            for dev_idx in idxs:
-                self._devices_list[dev_idx].init_model()
-                self._devices_list[dev_idx].set_model_state_dict(self._global_model)
+            self.init_nn_models(idxs)
 
             # perform training
             for dev_idx in idxs:
                 self._devices_list[dev_idx].device_training()
 
-            # knwoledge aggregation // global model gets set
+            # knowledge aggregation // global model gets set
             self.post_round(round_n, idxs)
 
             # del models

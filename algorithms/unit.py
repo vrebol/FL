@@ -12,6 +12,10 @@ class UnitDevice(CoCoFLDevice):
         super().__init__(device_id)
         self.cluster = None
         self.chunk_index = None
+        self.config = None
+
+    def set_config(self, config):
+        self.config = config
 
     #!overrides
     def device_training(self):
@@ -19,7 +23,7 @@ class UnitDevice(CoCoFLDevice):
         logging.info(f'[Unit]: Resources: {self.resources}')
 
         kwargs = copy.deepcopy(self._model_kwargs)
-        kwargs.update({'freeze': self._model_class.get_freezing_config(self.resources)})
+        kwargs.update({'freeze': self.config})
 
         # reinitialize model and restore state-dict
         state_dict = self._model.state_dict()
@@ -27,7 +31,7 @@ class UnitDevice(CoCoFLDevice):
 
         # make sure to use CPU in case quantization is used
         # otherwise push tensors to cuda
-        if any(self.resources.is_heterogeneous()) == True:
+        if len(self.config) > 0:
             self._torch_device = 'cpu'
         else:
             for key in state_dict:
@@ -71,11 +75,12 @@ class UnitServer(CoCoFLServer):
         for label in np.unique(kmeans.labels_):
             cluster_constraints = device_constraints_numeric[kmeans.labels_ == label]
             min_cluster_resources = np.min(cluster_constraints,axis=0) # has to be minimum at every category
+            logging.info(f"Min cluster resources: {min_cluster_resources}")
             for unit in reversed(unit_list):
                 if unit == 0:
                     continue
                 max_unit_resources = self._model[0].get_max_resources(unit)  # model class is the same for all devices 
-                print(max_unit_resources,min_cluster_resources)
+                logging.info(f"Max resources (time,data,memory): {max_unit_resources} when freezing {unit} blocks (units)")
                 # if max unit < min cluster for all categories then accept
                 if ((max_unit_resources < min_cluster_resources).all()):
                     cluster_configs = self._model[0].get_freezing_configs_unit(unit)
@@ -83,7 +88,7 @@ class UnitServer(CoCoFLServer):
                     self.configs.append(cluster_configs)
                     # generate starting indices list and in initialize assign to each device as chunk index
                     chunk_indices.append(np.resize(np.arange(len(cluster_configs)),len(cluster_constraints)))
-                    print(f"Chosen unit for cluster {label}: {unit}")
+                    logging.info(f"Chosen unit for cluster {label}: {unit}")
                     break
         # how to know number of configs per unit? just look at length of config 
         return kmeans.labels_, chunk_indices
@@ -125,3 +130,23 @@ class UnitServer(CoCoFLServer):
         self._devices_list[0].init_model()
         self._global_model = copy.deepcopy(self._devices_list[0]._model.state_dict())
         self._devices_list[0].del_model()
+
+    def shift_chunk_indices(self):
+        for device in self._devices_list:
+            device.chunk_index = (device.chunk_index + 1) % len(self.configs[device.cluster])
+        return
+    
+    #!overrides
+    def init_nn_models(self,idxs):
+        for dev_idx in idxs:
+            device = self._devices_list[dev_idx]
+            device.init_model()
+            device.set_model_state_dict(self._global_model)
+            device.set_config(self.configs[device.cluster][device.chunk_index]) 
+        return
+    
+    #!overrides
+    def post_round(self, round_n, idxs):
+        super().post_round(round_n, idxs)
+        self.shift_chunk_indices()
+
