@@ -105,6 +105,7 @@ class FedAvgEvaluationDevice(FedAvgDevice):
         # evaluation related
         self._test_data = None
         self._accuracy_test = None
+        self._loss_test = None
         self.is_unbalanced = False
         self.batch_size_test = None
 
@@ -142,6 +143,7 @@ class FedAvgEvaluationDevice(FedAvgDevice):
                                                  batch_size=self.batch_size_test, pin_memory=True)
 
         correct_predictions = 0
+        loss_sum = 0
 
         # per-class accuracy calculations
         n_classes = len(self._test_data.dataset.classes)
@@ -152,11 +154,13 @@ class FedAvgEvaluationDevice(FedAvgDevice):
                 inputs, labels = inputs.to(self._torch_device), labels.to(self._torch_device)
 
                 output = self._model(inputs)
+                loss = torch.nn.functional.cross_entropy(output, labels)
 
                 if not self.is_unbalanced:
                     correct_predictions += self.correct_predictions(labels, output)
                 else:
                     correct_predictions += self.correct_predictions_f1(labels, output)
+                loss_sum += loss
 
                 # per-class accuracy calculations
                 predictions = torch.argmax(output.cpu().detach(), axis=1)
@@ -164,10 +168,11 @@ class FedAvgEvaluationDevice(FedAvgDevice):
                     confusion_matrix[int(l), int(p)] += 1
 
             self._accuracy_test = correct_predictions/len(self._test_data)
+            self._loss_test = loss_sum/len(self._test_data)
 
-            # per-class accuarcy calculations
+            # per-class accuracy calculations
             per_class_accuracy = confusion_matrix.diag()/confusion_matrix.sum(1)
-            logging.info(f'EVAL: {per_class_accuracy}')
+            logging.info(f'EVAL: {per_class_accuracy}') # EVAL_loss: {self._loss_test}'
 
 
 class FedAvgServer(ABC):
@@ -197,6 +202,8 @@ class FedAvgServer(ABC):
         self._measurements_dict = {}
         self._measurements_dict['accuracy'] = []
         self._measurements_dict['data_upload'] = []
+        self._measurements_dict['loss'] = []
+
 
         # optimizer
         self._optimizer = None
@@ -320,9 +327,11 @@ class FedAvgServer(ABC):
         self._evaluation_device.set_model_state_dict(copy.deepcopy(averaged_model), strict=False)
         self._evaluation_device.test()
         acc = round(float(self._evaluation_device._accuracy_test), 4)
-        logging.info(f"[FEDAVG]: Round: {round_n} Test accuracy: {acc}")
+        loss = round(float(self._evaluation_device._loss_test), 8)
+        logging.info(f"[FEDAVG]: Round: {round_n} Test accuracy: {acc}, Test loss: {loss}")
 
         self._measurements_dict['accuracy'].append([acc, round_n])
+        self._measurements_dict['loss'].append([loss, round_n])
         self._global_model = averaged_model
 
     def initialize(self):

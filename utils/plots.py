@@ -46,7 +46,7 @@ class RunConfig():
         return x in self.config
 
     def get_Y(self):
-        if self._property_string == "accuracy":
+        if self._property_string == "accuracy" or self._property_string == "loss":
             return np.asarray(self._measurements[self._property_string])[:, 0]
         elif self._property_string == "data_upload":
             return np.cumsum(np.asanyarray(self._measurements[self._property_string])[:, 0]/(10**9))
@@ -172,6 +172,17 @@ def plot_config(run_path):
     plot_property(main_run, run_cfg_list, ["algorithm"], save_path=run_path + "/", property_string="data_upload")
     plot_property(main_run, run_cfg_list, ["model"], save_path=run_path + "/", property_string="data_upload")
     plot_property(main_run, run_cfg_list, ["dataset"], save_path=run_path + "/", property_string="data_upload")
+
+    main_run = RunConfig(run_path, property_string="loss")
+    run_paths = os.listdir(path_prefix)
+    run_paths = list(filter(lambda x: x.startswith("run_"), run_paths))
+    run_cfg_list = [RunConfig(path_prefix + path, property_string="loss")
+                    for path in run_paths if RunConfig(path_prefix + path, property_string="loss").cfg_hash != main_run.cfg_hash]
+    run_cfg_list = list(filter(lambda x: x.config is not None, run_cfg_list))
+
+    plot_property(main_run, run_cfg_list, ["session_tag"], save_path=run_path + "/", property_string="loss")
+ 
+
 
 if __name__ == "__main__":
 

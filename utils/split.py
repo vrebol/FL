@@ -190,6 +190,7 @@ class split_rcnoniid():
             ax[j].set_xlabel(f"dev_idx group {j}")
             ax[j].set_ylabel("class_idx")
         plt.savefig(path_prefix + "/data_distribution.png")
+        plt.gcf().clear()
 
         fig = plt.figure()
         ax = fig.subplots(1, n_groups)
