@@ -80,7 +80,7 @@ class UnitServer(CoCoFLServer):
                 if unit == 0:
                     continue
                 max_unit_resources = self._model[0].get_max_resources(unit)  # model class is the same for all devices 
-                logging.info(f"Max resources (time,data,memory): {max_unit_resources} when freezing {unit} blocks (units)")
+                logging.info(f"Max resources (time,data,memory): {max_unit_resources} when training {unit} blocks (units)")
                 # if max unit < min cluster for all categories then accept
                 if ((max_unit_resources < min_cluster_resources).all()):
                     cluster_configs = self._model[0].get_freezing_configs_unit(unit)
