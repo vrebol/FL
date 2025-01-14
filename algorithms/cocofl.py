@@ -10,8 +10,9 @@ class CoCoFLDevice(FedAvgDevice):
         self._check_trainable()
         logging.info(f'[COCOFL]: Resources: {self.resources}')
 
+        freezing_config = self._model_class.get_freezing_config(self.resources)
         kwargs = copy.deepcopy(self._model_kwargs)
-        kwargs.update({'freeze': self._model_class.get_freezing_config(self.resources)})
+        kwargs.update({'freeze': freezing_config})
 
         # reinitialize model and restore state-dict
         state_dict = self._model.state_dict()
@@ -19,7 +20,7 @@ class CoCoFLDevice(FedAvgDevice):
 
         # make sure to use CPU in case quantization is used
         # otherwise push tensors to cuda
-        if any(self.resources.is_heterogeneous()) == True:
+        if len(freezing_config) > 0:
             self._torch_device = 'cpu'
         else:
             for key in state_dict:

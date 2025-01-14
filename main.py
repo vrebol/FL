@@ -26,6 +26,9 @@ if __name__ == "__main__":
     parser.add_argument("--n_devices", type=int, default=100, help="Number of total FL devices")
     parser.add_argument("--n_devices_per_round", type=int, default=10, help="Number of FL devices active in one round")
     parser.add_argument("--n_device_clusters", type=int, default=0, help="Number of FL device clusters (> 0 works only with Unit algorithm)")
+    parser.add_argument("--device_distribution", type=str, default=None, choices=["Normal","Uniform"], help="Device distribution")
+
+
 
     parser.add_argument("--data_distribution", type=str, choices=['IID', 'NONIID', 'RCNONIID'], default="IID")
     parser.add_argument("--lr", type=float, default=0.1, help="Learning rate")
@@ -120,28 +123,8 @@ if __name__ == "__main__":
         from algorithms.unit import UnitServer
         flserver = UnitServer(run_path,args.n_device_clusters)
 
-    from utils.resources import DeviceResources, Constant, Uniform
+    
 
-    # Implementation of strong/medium/weak scheme
-    device_constraints = [DeviceResources() for _ in range(args.n_devices)]
-    if args.algorithm == 'Unit':
-        for resource in device_constraints[0:int(0.33*args.n_devices)]:
-            resource.set_all(Constant(1.0), Constant(1.0), Constant(1.0))
-        for resource in device_constraints[int(0.33*args.n_devices):int(0.66*args.n_devices)]:
-            resource.set_all(Constant(0.8), Uniform(0.5, 1.0), Constant(0.85))  #Uniform(0.5, 1.0)
-        for resource in device_constraints[int(0.66*args.n_devices):]:
-            resource.set_all(Constant(0.62), Uniform(0.5, 1.0), Constant(0.80))
-    elif args.algorithm in ['CoCoFL', 'FedAvgDropDevices']:
-        for resource in device_constraints[0:int(0.33*args.n_devices)]:
-            resource.set_all(Constant(1.0), Constant(1.0), Constant(1.0))
-        for resource in device_constraints[int(0.33*args.n_devices):int(0.66*args.n_devices)]:
-            resource.set_all(Constant(0.66), Uniform(0.5, 1.0), Constant(0.66))
-        for resource in device_constraints[int(0.66*args.n_devices):]:
-            resource.set_all(Constant(0.33), Uniform(0.5, 1.0), Constant(0.33))
-    else:
-        for resource in device_constraints:
-            resource.set_all(Constant(1.0), Constant(1.0), Constant(1.0))
-    flserver.set_device_constraints(device_constraints)
 
     flserver.n_devices_per_round = args.n_devices_per_round
     flserver.n_devices = args.n_devices
@@ -277,6 +260,41 @@ if __name__ == "__main__":
         elif args.algorithm in ['CoCoFL','Unit']:
             from nets.QuantizedNets.Transformer.transformer import QTransformer
             net = QTransformer
+
+    from utils.resources import DeviceResources, Constant, Uniform
+
+    # Implementation of strong/medium/weak scheme
+    device_constraints = [DeviceResources() for _ in range(args.n_devices)]
+    if args.device_distribution == None:
+        if args.algorithm == 'Unit':
+            for resource in device_constraints[0:int(0.33*args.n_devices)]:
+                resource.set_all(Constant(1.0), Constant(1.0), Constant(1.0))
+            for resource in device_constraints[int(0.33*args.n_devices):int(0.66*args.n_devices)]:
+                resource.set_all(Constant(0.8), Uniform(0.5, 1.0), Constant(0.85))  #Uniform(0.5, 1.0)
+            for resource in device_constraints[int(0.66*args.n_devices):]:
+                resource.set_all(Constant(0.62), Uniform(0.5, 1.0), Constant(0.80))
+        elif args.algorithm in ['CoCoFL', 'FedAvgDropDevices']:
+            for resource in device_constraints[0:int(0.33*args.n_devices)]:
+                resource.set_all(Constant(1.0), Constant(1.0), Constant(1.0))
+            for resource in device_constraints[int(0.33*args.n_devices):int(0.66*args.n_devices)]:
+                resource.set_all(Constant(0.66), Uniform(0.5, 1.0), Constant(0.66))
+            for resource in device_constraints[int(0.66*args.n_devices):]:
+                resource.set_all(Constant(0.33), Uniform(0.5, 1.0), Constant(0.33))
+        else:
+            for resource in device_constraints:
+                resource.set_all(Constant(1.0), Constant(1.0), Constant(1.0))
+
+    elif args.device_distribution == "Normal":
+        from utils.resources import createDeviceResources
+        min_resources = net.get_min_req_resources()
+        createDeviceResources(device_constraints, min_resources,"Normal")
+
+    elif args.device_distribution == "Uniform":
+        from utils.resources import createDeviceResources
+        min_resources = net.get_min_req_resources()
+        createDeviceResources(device_constraints, min_resources,"Uniform")
+
+    flserver.set_device_constraints(device_constraints)
 
     from utils.split import split_iid, split_noniid, split_rcnoniid, split_SHAKESPEARE_rcnoniid
 

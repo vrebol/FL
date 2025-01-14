@@ -66,7 +66,7 @@ class UnitServer(CoCoFLServer):
 
         device_constraints_numeric = np.array(device_constraints_numeric)
         kmeans = KMeans(n_clusters=n_clusters, random_state=0, n_init="auto").fit(device_constraints_numeric)
-        
+
         unit_list = self._model[0].get_units()
         # get list of units from the table
         # run profiling with 3 epochs
@@ -82,7 +82,7 @@ class UnitServer(CoCoFLServer):
                 max_unit_resources = self._model[0].get_max_resources(unit)  # model class is the same for all devices 
                 logging.info(f"Max resources (time,data,memory): {max_unit_resources} when training {unit} blocks (units)")
                 # if max unit < min cluster for all categories then accept
-                if ((max_unit_resources < min_cluster_resources).all()):
+                if ((max_unit_resources <= min_cluster_resources).all()):
                     cluster_configs = self._model[0].get_freezing_configs_unit(unit)
                     # generate array with relevant configs 
                     self.configs.append(cluster_configs)
