@@ -158,6 +158,17 @@ class QTransformer(QTransformerBase):
     def get_units():
         units = get_units(_g_table_qtransformer_unit)
         return units
+    
+    @staticmethod
+    def get_min_req_resources():
+        units = QTransformer.get_units()
+        min_resources = [1,1,1]
+        for unit in units:
+            max_unit_resources = QTransformer.get_max_resources(unit)
+            for i in range(3):
+                if max_unit_resources[i] < min_resources[i]:
+                    min_resources[i] = max_unit_resources[i]
+        return min_resources
 
 
 class QTransformerSeq2Seq(QTransformerBase):
@@ -216,3 +227,14 @@ class QTransformerSeq2Seq(QTransformerBase):
     def get_units():
         units = get_units(_g_table_qtransformerseq2seq_unit)
         return units
+    
+    @staticmethod
+    def get_min_req_resources():
+        units = QTransformerSeq2Seq.get_units()
+        min_resources = [1,1,1]
+        for unit in units:
+            max_unit_resources = QTransformerSeq2Seq.get_max_resources(unit)
+            for i in range(3):
+                if max_unit_resources[i] < min_resources[i]:
+                    min_resources[i] = max_unit_resources[i]
+        return min_resources

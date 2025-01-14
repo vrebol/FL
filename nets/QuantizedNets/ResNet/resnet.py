@@ -126,6 +126,18 @@ class QResNet18(QResNet):
     def get_units():
         units = get_units(_g_table_qresnet18_unit)
         return units
+    
+    @staticmethod
+    def get_min_req_resources():
+        units = QResNet18.get_units()
+        min_resources = [1,1,1]
+        for unit in units:
+            max_unit_resources = QResNet18.get_max_resources(unit)
+            for i in range(3):
+                if max_unit_resources[i] < min_resources[i]:
+                    min_resources[i] = max_unit_resources[i]
+        return min_resources
+
 
 
 ### RESNET50 ###
@@ -160,3 +172,14 @@ class QResNet50(QResNet):
     def get_units():
         units = get_units(_g_table_qresnet50_unit)
         return units
+    
+    @staticmethod
+    def get_min_req_resources():
+        units = QResNet50.get_units()
+        min_resources = [1,1,1]
+        for unit in units:
+            max_unit_resources = QResNet50.get_max_resources(unit)
+            for i in range(3):
+                if max_unit_resources[i] < min_resources[i]:
+                    min_resources[i] = max_unit_resources[i]
+        return min_resources

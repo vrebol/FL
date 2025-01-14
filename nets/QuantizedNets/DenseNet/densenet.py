@@ -167,3 +167,14 @@ class QDenseNet40(QDenseNet):
     def get_units():
         units = get_units(_g_table_qdensenet40_unit)
         return units
+    
+    @staticmethod
+    def get_min_req_resources():
+        units = QDenseNet40.get_units()
+        min_resources = [1,1,1]
+        for unit in units:
+            max_unit_resources = QDenseNet40.get_max_resources(unit)
+            for i in range(3):
+                if max_unit_resources[i] < min_resources[i]:
+                    min_resources[i] = max_unit_resources[i]
+        return min_resources
