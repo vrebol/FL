@@ -36,7 +36,7 @@ class UnitDevice(CoCoFLDevice):
         else:
             for key in state_dict:
                 state_dict[key] = state_dict[key].to(self._torch_device)
-
+        print(self._torch_device)
         self._model.load_state_dict(state_dict, strict=False)
 
         # training
