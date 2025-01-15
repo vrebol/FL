@@ -13,11 +13,11 @@ import json
 with open('/kaggle/working/FL/nets/QuantizedNets/MobileNet/tables/table__CoCoFL_x64_QMobileNet.json', 'r') as fd:
     print(os.getcwd())
     _g_table_qmobilenet = json.load(fd)
-with open('nets/QuantizedNets/MobileNet/tables/table__Unit_x64_MobileNet.json', 'r') as fd:
+with open('/kaggle/working/FL/nets/QuantizedNets/MobileNet/tables/table__Unit_x64_MobileNet.json', 'r') as fd:
     _g_table_qmobilenet_unit = json.load(fd)
-with open('nets/QuantizedNets/MobileNet/tables/table__CoCoFL_x64_QMobileNetLarge.json', 'r') as fd:
+with open('/kaggle/working/FL/nets/QuantizedNets/MobileNet/tables/table__CoCoFL_x64_QMobileNetLarge.json', 'r') as fd:
     _g_table_qmobilenetlarge = json.load(fd)
-with open('nets/QuantizedNets/MobileNet/tables/table__Unit_x64_MobileNetLarge.json', 'r') as fd:
+with open('/kaggle/working/FL/nets/QuantizedNets/MobileNet/tables/table__Unit_x64_MobileNetLarge.json', 'r') as fd:
     _g_table_qmobilenetlarge_unit = json.load(fd)
 
 
