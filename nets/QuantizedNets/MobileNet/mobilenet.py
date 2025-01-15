@@ -5,11 +5,13 @@ from nets.QuantizedNets.MobileNet.training import Block
 import random
 import torch.nn as nn
 import torch.nn.functional as F
+import os
 
 from nets.Baseline.MobileNet.mobilenet import IOLayer
 import json
 
-with open('nets/QuantizedNets/MobileNet/tables/table__CoCoFL_x64_QMobileNet.json', 'r') as fd:
+with open('/kaggle/working/FL/nets/QuantizedNets/MobileNet/tables/table__CoCoFL_x64_QMobileNet.json', 'r') as fd:
+    print(os.getcwd())
     _g_table_qmobilenet = json.load(fd)
 with open('nets/QuantizedNets/MobileNet/tables/table__Unit_x64_MobileNet.json', 'r') as fd:
     _g_table_qmobilenet_unit = json.load(fd)
