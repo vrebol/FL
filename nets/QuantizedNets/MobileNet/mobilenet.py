@@ -126,6 +126,18 @@ class QMobileNet(QMobileNetBase):
     def get_units():
         units = get_units(_g_table_qmobilenet_unit)
         return units
+    
+    @staticmethod
+    def get_min_req_resources():
+        units = QMobileNet.get_units()
+        min_resources = [1,1,1]
+        for unit in units:
+            max_unit_resources = QMobileNet.get_max_resources(unit)
+            for i in range(3):
+                if max_unit_resources[i] < min_resources[i]:
+                    min_resources[i] = max_unit_resources[i]
+        return min_resources
+
 
 
 class QMobileNetLarge(QMobileNetBase):
@@ -174,3 +186,14 @@ class QMobileNetLarge(QMobileNetBase):
     def get_units():
         units = get_units(_g_table_qmobilenetlarge_unit)
         return units
+    
+    @staticmethod
+    def get_min_req_resources():
+        units = QMobileNetLarge.get_units()
+        min_resources = [1,1,1]
+        for unit in units:
+            max_unit_resources = QMobileNetLarge.get_max_resources(unit)
+            for i in range(3):
+                if max_unit_resources[i] < min_resources[i]:
+                    min_resources[i] = max_unit_resources[i]
+        return min_resources
