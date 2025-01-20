@@ -7,7 +7,7 @@ class Constant():
         pass
 
     def is_heterogeneous(self):
-        if self.value != 1.0:
+        if self.value >= 1.0:
             return True
         else:
             return False
