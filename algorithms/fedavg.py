@@ -368,7 +368,7 @@ class FedAvgServer(ABC):
         self._global_model = copy.deepcopy(self._devices_list[0]._model.state_dict())
         self._devices_list[0].del_model()
 
-        if str(self.split_function) == "split_rcnoniid":
+        if str(self.split_function) == "split_rcnoniid" and self._plotting_function is not None: 
             self._group_distributions = torch.tensor(np.array(self.split_function._group_distributions))
 
     def run(self):
