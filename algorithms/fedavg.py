@@ -108,6 +108,7 @@ class FedAvgEvaluationDevice(FedAvgDevice):
         self._loss_test = None
         self.is_unbalanced = False
         self.batch_size_test = None
+        self._per_class_accuracy = None
 
     def device_training(self):
         raise NotImplementedError("Evaluation Device does not have a round function.")
@@ -171,9 +172,12 @@ class FedAvgEvaluationDevice(FedAvgDevice):
             self._loss_test = loss_sum/len(self._test_data)
 
             # per-class accuracy calculations
-            per_class_accuracy = confusion_matrix.diag()/confusion_matrix.sum(1)
-            logging.info(f'EVAL: {per_class_accuracy}') # EVAL_loss: {self._loss_test}'
-
+            self._per_class_accuracy = confusion_matrix.diag()/confusion_matrix.sum(1)
+            logging.info(f'EVAL: {self._per_class_accuracy}') # EVAL_loss: {self._loss_test}'
+    
+    def compute_group_accuracy(self, group_distributions):
+        group_acc = torch.sum(group_distributions * self._per_class_accuracy, axis=1)  
+        logging.info(f'GROUP acc: {group_acc}')
 
 class FedAvgServer(ABC):
     _device_class = FedAvgDevice
@@ -215,6 +219,7 @@ class FedAvgServer(ABC):
         self._test_data = None
         self._train_data = None
         self.split_function = None
+        self._group_distributions = None # for calculating group accuracy
 
         self._seed = None
 
@@ -363,6 +368,9 @@ class FedAvgServer(ABC):
         self._global_model = copy.deepcopy(self._devices_list[0]._model.state_dict())
         self._devices_list[0].del_model()
 
+        if str(self.split_function) == "split_rcnoniid" and self._plotting_function is not None: 
+            self._group_distributions = torch.tensor(np.array(self.split_function._group_distributions))
+
     def run(self):
         self.check_device_data()
         print(f"#Samples on devices: {[len(dev._train_data) for dev in self._devices_list]}")
@@ -403,6 +411,9 @@ class FedAvgServer(ABC):
 
             # plotting
             if (round_n % 25) == 0 and round_n != 0:
+                if str(self.split_function) == "split_rcnoniid" and self._plotting_function is not None:
+                    self._evaluation_device.compute_group_accuracy(self._group_distributions)
+                    
                 if self._plotting_function is not None:
                     try:
                         self._plotting_function(self._plotting_args)

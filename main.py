@@ -268,18 +268,18 @@ if __name__ == "__main__":
     if args.device_distribution == None:
         if args.algorithm == 'Unit':
             for resource in device_constraints[0:int(0.33*args.n_devices)]:
-                resource.set_all(Constant(1.0), Constant(1.0), Constant(1.0))
+                resource.set_all(Constant(0.62), Uniform(0.5, 1.0), Constant(0.80))
             for resource in device_constraints[int(0.33*args.n_devices):int(0.66*args.n_devices)]:
                 resource.set_all(Constant(0.8), Uniform(0.5, 1.0), Constant(0.85))  #Uniform(0.5, 1.0)
             for resource in device_constraints[int(0.66*args.n_devices):]:
-                resource.set_all(Constant(0.62), Uniform(0.5, 1.0), Constant(0.80))
+                resource.set_all(Constant(1.0), Constant(1.0), Constant(1.0))
         elif args.algorithm in ['CoCoFL', 'FedAvgDropDevices']:
             for resource in device_constraints[0:int(0.33*args.n_devices)]:
-                resource.set_all(Constant(1.0), Constant(1.0), Constant(1.0))
+                resource.set_all(Constant(0.33), Uniform(0.5, 1.0), Constant(0.33))
             for resource in device_constraints[int(0.33*args.n_devices):int(0.66*args.n_devices)]:
                 resource.set_all(Constant(0.66), Uniform(0.5, 1.0), Constant(0.66))
             for resource in device_constraints[int(0.66*args.n_devices):]:
-                resource.set_all(Constant(0.33), Uniform(0.5, 1.0), Constant(0.33))
+                resource.set_all(Constant(1.0), Constant(1.0), Constant(1.0))
         else:
             for resource in device_constraints:
                 resource.set_all(Constant(1.0), Constant(1.0), Constant(1.0))

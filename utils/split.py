@@ -12,6 +12,9 @@ class split_iid():
         self._is_plot = is_plot
         self._seed = seed
 
+    def __str__(self):
+        return "split_iid"
+    
     def __call__(self, dataset, n_device):
         length = len(dataset)
 
@@ -61,6 +64,9 @@ class split_noniid():
         self._run_path = run_path
         self._is_plot = is_plot
         self._seed = seed
+
+    def __str__(self):
+        return "split_noniid"
 
     def __call__(self, dataset, n_device):
 
@@ -124,6 +130,10 @@ class split_rcnoniid():
         self._is_plot = is_plot
         self._seed = seed
         self._n_groups = n_groups
+        self._group_distributions = None
+    
+    def __str__(self):
+        return "split_rcnoniid"
 
     def __call__(self, dataset, n_device):
 
@@ -166,9 +176,9 @@ class split_rcnoniid():
             dev_idxs.append(new_ordered_idxs[(i*n_data_per_device):((i+1)*n_data_per_device)])
             dev_targets.append(targets[(i*n_data_per_device):((i+1)*n_data_per_device)])
         dev_idxs = [torch.tensor(idxs) for idxs in dev_idxs]
-
+        
         if self._is_plot:
-            self.plot(n_classes, n_device, dev_targets, self._run_path, self._n_groups)
+            self._group_distributions = self.plot(n_classes, n_device, dev_targets, self._run_path, self._n_groups)
 
         return dev_idxs
 
@@ -194,11 +204,14 @@ class split_rcnoniid():
 
         fig = plt.figure()
         ax = fig.subplots(1, n_groups)
+        group_distr_list = []
         for j in range(n_groups):
-            ax[j].plot(occ_per_class[j]/np.sum(occ_per_class[j]))
-            logging.info(f"[DISTRIBUTION]: group {j+1}: {occ_per_class[j]/np.sum(occ_per_class[j])}")
+            group_distr = occ_per_class[j]/np.sum(occ_per_class[j])
+            ax[j].plot(group_distr)
+            logging.info(f"[DISTRIBUTION]: group {j+1}: {group_distr}")
+            group_distr_list.append(group_distr)
         plt.savefig(path_prefix + "/data_distribution_per_group.png")
-        return
+        return group_distr_list
 
 
 class split_SHAKESPEARE_rcnoniid():
@@ -208,6 +221,9 @@ class split_SHAKESPEARE_rcnoniid():
         self._n_groups = n_groups
         self._is_plot = is_plot
         self._run_path = run_path
+
+    def __str__(self):
+        return "split_shakespeare_rcnoniid"
 
     def __call__(self, dataset, n_device):
 
