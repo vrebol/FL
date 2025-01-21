@@ -411,7 +411,7 @@ class FedAvgServer(ABC):
 
             # plotting
             if (round_n % 25) == 0 and round_n != 0:
-                if str(self.split_function) == "split_rcnoniid":
+                if str(self.split_function) == "split_rcnoniid" and self._plotting_function is not None:
                     self._evaluation_device.compute_group_accuracy(self._group_distributions)
                     
                 if self._plotting_function is not None:
