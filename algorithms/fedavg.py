@@ -8,7 +8,7 @@ from sklearn.metrics import f1_score
 import numpy as np
 import tqdm
 import sys
-
+from concurrent.futures import ThreadPoolExecutor
 
 class FedAvgDevice():
     def __init__(self, device_id):
@@ -222,6 +222,7 @@ class FedAvgServer(ABC):
         self._group_distributions = None # for calculating group accuracy
 
         self._seed = None
+        self._parallelize = False
 
     def set_seed(self, seed):
         torch.manual_seed(seed)
@@ -238,6 +239,9 @@ class FedAvgServer(ABC):
 
     def set_device_constraints(self, device_constraints):
         self._device_constraints = device_constraints
+
+    def set_parallelize(self, parallelize):
+        self._parallelize = parallelize
 
     @staticmethod
     def random_device_selection(n_devices, n_devices_per_round, rng):
@@ -390,9 +394,15 @@ class FedAvgServer(ABC):
             # init NN models
             self.init_nn_models(idxs)
 
-            # perform training
-            for dev_idx in idxs:
-                self._devices_list[dev_idx].device_training()
+            if self._parallelize:
+                devices = [self._devices_list[dev_idx] for dev_idx in idxs]
+                print(devices)
+                with ThreadPoolExecutor(max_workers=10) as executor:
+                    executor.map(lambda obj: obj.device_training(), devices)  
+            else:
+                # perform training
+                for dev_idx in idxs:
+                    self._devices_list[dev_idx].device_training()
 
             # knowledge aggregation // global model gets set
             self.post_round(round_n, idxs)

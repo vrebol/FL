@@ -132,6 +132,7 @@ if __name__ == "__main__":
     flserver.n_rounds = args.n_rounds
     flserver.lr = args.lr
     flserver.set_seed(args.seed)
+    flserver.set_parallelize(args.torch_device.startswith('cpu'))
     flserver.lr_schedule = [[args.lr_schedule[i], args.lr/10**(i+1)] for i in range(len(args.lr_schedule))]
     flserver.progress_output = args.progress_bar
 
