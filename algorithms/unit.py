@@ -66,11 +66,9 @@ class UnitServer(CoCoFLServer):
 
         device_constraints_numeric = np.array(device_constraints_numeric)
         kmeans = KMeans(n_clusters=n_clusters, random_state=0, n_init="auto").fit(device_constraints_numeric)
-
-        unit_list = self._model[0].get_units()
         # get list of units from the table
-        # run profiling with 3 epochs
-        # push
+        unit_list = self._model[0].get_units()
+
         chunk_indices = []
         for label in np.unique(kmeans.labels_):
             cluster_constraints = device_constraints_numeric[kmeans.labels_ == label]
@@ -112,7 +110,7 @@ class UnitServer(CoCoFLServer):
         if self._device_constraints is not None:
             cluster_labels, chunk_indices = self.initialize_clusters(self._device_constraints, self._n_device_clusters)
  
-        counter = np.zeros(3,dtype=int)
+        counter = np.zeros(self._n_device_clusters,dtype=int)
         for i, device in enumerate(self._devices_list):
             device.set_model(self._model[i], self._model_kwargs[i])
             device.set_train_data(torch.utils.data.Subset(self._train_data.dataset, idxs_list[i]))
