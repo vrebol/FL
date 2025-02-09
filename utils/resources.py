@@ -102,7 +102,6 @@ def createDeviceResources(device_constraints, min_resources, distr="Uniform"):
             resources.sort()
             resources_a[:,cnt] = resources 
             cnt = cnt + 1
-    print(resources_a)
     cnt = 0
     for resource in device_constraints:
         resource.set_all(Constant(resources_a[cnt][0]), Constant(resources_a[cnt][1]), Constant(resources_a[cnt][2]))
