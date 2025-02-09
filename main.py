@@ -284,15 +284,10 @@ if __name__ == "__main__":
             for resource in device_constraints:
                 resource.set_all(Constant(1.0), Constant(1.0), Constant(1.0))
 
-    elif args.device_distribution == "Normal":
+    else:
         from utils.resources import createDeviceResources
-        min_resources = net.get_min_req_resources()
-        createDeviceResources(device_constraints, min_resources,"Normal")
-
-    elif args.device_distribution == "Uniform":
-        from utils.resources import createDeviceResources
-        min_resources = net.get_min_req_resources()
-        createDeviceResources(device_constraints, min_resources,"Uniform")
+        min_resources = net.get_max_resources(1)
+        createDeviceResources(device_constraints, min_resources,args.device_distribution)
 
     flserver.set_device_constraints(device_constraints)
 
