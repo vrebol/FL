@@ -266,8 +266,9 @@ if __name__ == "__main__":
                 item["time_forward"] += t_fw
                 item["time_backward"] += t_bw
                 item["memory"] += [memory]
-                item["unit"] += [unit]
                 already_there = True
+                if args.mode == "Unit":
+                    item["unit"] += [unit]
         if not already_there:
             profiling_entry = {"freeze": list(sorted(kwargs["freeze"])),
                             "time_forward": t_fw,
@@ -305,13 +306,21 @@ if __name__ == "__main__":
     print("max_time: ", max_time, "max_up: ", max_up, "max_memory: ", max_mem)
 
     for config in data:
-        res = {
-            "freeze": config["freeze"],
-            "unit": list(set(sorted(config["unit"]))),
-            "time": round((np.mean(config["time_forward"]) + np.mean(config["time_backward"]))/max_time, 5),
-            "data": round(config["data_up"]/max_up, 5),
-            "memory": round(np.mean(config["memory"])/max_mem, 5),
-        }
+        if args.mode == "Unit":
+            res = {
+                "freeze": config["freeze"],
+                "unit": list(set(sorted(config["unit"]))),
+                "time": round((np.mean(config["time_forward"]) + np.mean(config["time_backward"]))/max_time, 5),
+                "data": round(config["data_up"]/max_up, 5),
+                "memory": round(np.mean(config["memory"])/max_mem, 5),
+            }
+        else:
+            res = {
+                "freeze": config["freeze"],
+                "time": round((np.mean(config["time_forward"]) + np.mean(config["time_backward"]))/max_time, 5),
+                "data": round(config["data_up"]/max_up, 5),
+                "memory": round(np.mean(config["memory"])/max_mem, 5),
+            }
         if config["freeze"] == []:
             res.update({"__debug_max_time_in_s": round(max_time, 5),
                         "__debug_max_data_in_bytes": round((max_up*4)/(10**9), 5),
