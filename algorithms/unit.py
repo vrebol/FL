@@ -31,7 +31,7 @@ class UnitDevice(CoCoFLDevice):
 
         # make sure to use CPU in case quantization is used
         # otherwise push tensors to cuda
-        if len(self.config) > 0:
+        if len(self.config) > 1:
             self._torch_device = 'cpu'
         else:
             for key in state_dict:
@@ -66,23 +66,27 @@ class UnitServer(CoCoFLServer):
 
         device_constraints_numeric = np.array(device_constraints_numeric)
         kmeans = KMeans(n_clusters=n_clusters, random_state=0, n_init="auto").fit(device_constraints_numeric)
+        
         # get list of units from the table
         unit_list = self._model[0].get_units()
-
+        unit_list.reverse()
+        # move unit 0 to the beggining of reversed list
+        unit_list = unit_list[-1:] + unit_list[:-1]
         chunk_indices = []
         for label in np.unique(kmeans.labels_):
             cluster_constraints = device_constraints_numeric[kmeans.labels_ == label]
             min_cluster_resources = np.min(cluster_constraints,axis=0) # has to be minimum at every category
             logging.info(f"Min cluster resources: {min_cluster_resources}")
-            for unit in reversed(unit_list):
-                if unit == 0:
-                    continue
+            for unit in unit_list:
                 max_unit_resources = self._model[0].get_max_resources(unit)  # model class is the same for all devices 
-                logging.info(f"Max resources (time,data,memory): {max_unit_resources} when training {unit} blocks (units)")
+                if unit == 0:
+                    logging.info("Max resources (time,data,memory): {max_unit_resources} when training all blocks (units)")
+                else:
+                    logging.info(f"Max resources (time,data,memory): {max_unit_resources} when training {unit} blocks (units)")
                 # if max unit < min cluster for all categories then accept
                 if ((max_unit_resources <= min_cluster_resources).all()):
-                    cluster_configs = self._model[0].get_freezing_configs_unit(unit)
                     # generate array with relevant configs 
+                    cluster_configs = self._model[0].get_freezing_configs_unit(unit)
                     self.configs.append(cluster_configs)
                     # generate starting indices list and in initialize assign to each device as chunk index
                     chunk_indices.append(np.resize(np.arange(len(cluster_configs)),len(cluster_constraints)))
