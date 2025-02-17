@@ -86,8 +86,8 @@ def createDeviceResources(device_constraints, min_resources, distr="Uniform"):
         cnt = 0
         for r in min_resources:
             rng = np.random.default_rng(seed=7)
-            loc = r + ((1.2 - r)/2)
-            scale = ((1.2 - r)/2)/2
+            loc = r + ((1.3 - r)/2)
+            scale = ((1.3 - r)/2)/2
             resources = rng.normal(loc=loc,scale=scale,size=(100))
             resources[resources < r] = r
             resources.sort()
@@ -98,7 +98,7 @@ def createDeviceResources(device_constraints, min_resources, distr="Uniform"):
         cnt = 0
         for r in min_resources:
             rng = np.random.default_rng(seed=7)
-            resources = rng.uniform(low=r,high=1.2,size=(100))
+            resources = rng.uniform(low=r,high=1.3,size=(100))
             resources.sort()
             resources_a[:,cnt] = resources 
             cnt = cnt + 1

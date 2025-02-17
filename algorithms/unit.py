@@ -31,7 +31,7 @@ class UnitDevice(CoCoFLDevice):
 
         # make sure to use CPU in case quantization is used
         # otherwise push tensors to cuda
-        if len(self.config) > 1:
+        if len(self.config) > 0:
             self._torch_device = 'cpu'
         else:
             for key in state_dict:
