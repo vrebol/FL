@@ -368,7 +368,7 @@ class FedAvgServer(ABC):
         self._global_model = copy.deepcopy(self._devices_list[0]._model.state_dict())
         self._devices_list[0].del_model()
 
-        if str(self.split_function) == "split_rcnoniid" and self._plotting_function is not None: 
+        if str(self.split_function) == "split_rcnoniid" and self.split_function._is_plot == True: 
             self._group_distributions = torch.tensor(np.array(self.split_function._group_distributions))
 
     def run(self):
@@ -410,12 +410,12 @@ class FedAvgServer(ABC):
                 print(f"round_n {round_n}, acc={self._measurements_dict['accuracy'][round_n][0]}")
 
             # plotting
-            if (round_n % 25) == 0 and round_n != 0:
-                if str(self.split_function) == "split_rcnoniid" and self._plotting_function is not None:
-                    self._evaluation_device.compute_group_accuracy(self._group_distributions)
-                    
-                if self._plotting_function is not None:
-                    try:
-                        self._plotting_function(self._plotting_args)
-                    except:
-                        print("Error plotting!")
+            # if (round_n % 25) == 0 and round_n != 0:
+            if str(self.split_function) == "split_rcnoniid" and self.split_function._is_plot == True:
+                self._evaluation_device.compute_group_accuracy(self._group_distributions)
+                
+            if self._plotting_function is not None:
+                try:
+                    self._plotting_function(self._plotting_args)
+                except:
+                    print("Error plotting!")

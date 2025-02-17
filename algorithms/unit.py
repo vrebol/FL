@@ -129,6 +129,10 @@ class UnitServer(CoCoFLServer):
         self._global_model = copy.deepcopy(self._devices_list[0]._model.state_dict())
         self._devices_list[0].del_model()
 
+        if str(self.split_function) == "split_rcnoniid" and self.split_function._is_plot == True: 
+            self._group_distributions = torch.tensor(np.array(self.split_function._group_distributions))
+            print(self._group_distributions)
+
     def shift_chunk_indices(self):
         for device in self._devices_list:
             device.chunk_index = (device.chunk_index + 1) % len(self.configs[device.cluster])
