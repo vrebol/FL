@@ -410,12 +410,12 @@ class FedAvgServer(ABC):
                 print(f"round_n {round_n}, acc={self._measurements_dict['accuracy'][round_n][0]}")
 
             # plotting
-            # if (round_n % 25) == 0 and round_n != 0:
-            if str(self.split_function) == "split_rcnoniid" and self.split_function._is_plot == True:
-                self._evaluation_device.compute_group_accuracy(self._group_distributions)
-                
-            if self._plotting_function is not None:
-                try:
-                    self._plotting_function(self._plotting_args)
-                except:
-                    print("Error plotting!")
+            if (round_n % 25) == 0 and round_n != 0:
+                if str(self.split_function) == "split_rcnoniid" and self.split_function._is_plot == True:
+                    self._evaluation_device.compute_group_accuracy(self._group_distributions)
+                    
+                if self._plotting_function is not None:
+                    try:
+                        self._plotting_function(self._plotting_args)
+                    except:
+                        print("Error plotting!")
