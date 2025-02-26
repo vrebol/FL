@@ -1,4 +1,4 @@
-from nets.QuantizedNets.utils.utils import filter_table, filter_table_unit, filter_unit_max, get_units
+from nets.QuantizedNets.utils.utils import filter_table, filter_table_unit, filter_unit_max, get_units, plot_configs_unit, get_resources_unit
 from nets.QuantizedNets.DenseNet.backwards import QBWBottleneck, QBWTransition
 from nets.QuantizedNets.DenseNet.forward import QFWBottleneck, QFWTransition
 from nets.QuantizedNets.DenseNet.training import Bottleneck, Transition
@@ -162,7 +162,13 @@ class QDenseNet40(QDenseNet):
     def get_freezing_configs_unit(unit):
         configs = filter_table_unit(unit, _g_table_qdensenet40_unit)
         return configs
-    
+
+    @staticmethod
+    def plot_configs_unit(unit, resource, run_path):
+        resources = get_resources_unit(unit,resource,_g_table_qdensenet40_unit,QDenseNet40.n_freezable_layers())
+        plot_configs_unit(resources, unit, resource, run_path)
+        return
+
     @staticmethod
     def get_units():
         units = get_units(_g_table_qdensenet40_unit)

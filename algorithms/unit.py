@@ -137,6 +137,8 @@ class UnitServer(CoCoFLServer):
             self._group_distributions = torch.tensor(np.array(self.split_function._group_distributions))
             print(self._group_distributions)
 
+        # self._model[0].plot_configs_unit(3,"time",self._storage_path)
+
     def shift_chunk_indices(self):
         for device in self._devices_list:
             device.chunk_index = (device.chunk_index + 1) % len(self.configs[device.cluster])

@@ -1,6 +1,7 @@
 import torch
 import copy
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def filter_state_dict_keys(sd, endswith_key_string):
@@ -100,3 +101,32 @@ def get_units(table):
     units = {item['unit'][0] for item in table}
     units_list = list(units)
     return units_list
+
+def get_resources_unit(unit,resource,table,n_blocks):
+    table = copy.deepcopy(table)
+    # filter table to retain entries with desired unit
+    unit_configs = list(filter(lambda x: unit in x['unit'], table))
+    # freeze configurations
+    freezing_unit_configs = [ config['freeze'] for config in unit_configs ]
+    # get resource consumption
+    unit_resources = [ config[resource] for config in unit_configs ]
+    # get trained blocks
+    all_blocks = list(np.arange(n_blocks))
+    trained_blocks = [ np.setdiff1d(all_blocks, np.array(freezing_config)) for freezing_config in freezing_unit_configs ] 
+    trained_blocks_str = [ '|'.join(map(str, x)) for x in trained_blocks ]
+    resources_dict = dict(zip(trained_blocks_str, unit_resources))
+    
+    return resources_dict 
+
+
+def plot_configs_unit(resources, unit, resource, run_path):
+        
+    plt.bar(resources.keys(), resources.values(), color='orange')
+    plt.title(f"{resource} consumption when training {unit} layers")
+    plt.xlabel('Trained layers indices (others are frozen)')
+    plt.ylabel(f'{resource} consumption')
+    plt.xticks(rotation='vertical')
+
+    plt.savefig(run_path + f"/densenet_{resource}_{unit}.png", bbox_inches="tight")
+
+    return

@@ -121,6 +121,12 @@ class QResNet18(QResNet):
     def get_freezing_configs_unit(unit):
         configs = filter_table_unit(unit, _g_table_qresnet18_unit)
         return configs
+
+    @staticmethod
+    def plot_configs_unit(unit, resource, run_path):
+        resources = get_resources_unit(unit,resource,_g_table_qresnet18_unit,QResNet18.n_freezable_layers())
+        plot_configs_unit(resources, unit, resource, run_path)
+        return
     
     @staticmethod
     def get_units():
