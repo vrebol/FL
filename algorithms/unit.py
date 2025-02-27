@@ -29,6 +29,11 @@ class UnitDevice(CoCoFLDevice):
         state_dict = self._model.state_dict()
         self._model = self._model_class(**kwargs)
 
+        # store block selection of current device
+        block_selections = np.zeros(self._model.n_freezable_layers(),dtype=int) 
+        block_selections[self.config] = 1
+        self._block_selection = 1 - block_selections 
+
         # make sure to use CPU in case quantization is used
         # otherwise push tensors to cuda
         if len(self.config) > 0:
@@ -136,6 +141,8 @@ class UnitServer(CoCoFLServer):
         if str(self.split_function) == "split_rcnoniid" and self.split_function._is_plot == True: 
             self._group_distributions = torch.tensor(np.array(self.split_function._group_distributions))
             print(self._group_distributions)
+
+        self._measurements_dict['block_selections'] = np.zeros(self._model[0].n_freezable_layers())
 
         # self._model[0].plot_configs_unit(3,"time",self._storage_path)
 

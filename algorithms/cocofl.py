@@ -2,9 +2,14 @@ from .fedavg import FedAvgDevice, FedAvgEvaluationDevice, FedAvgServer
 import logging
 import copy
 import torch
+import numpy as np
 
 
 class CoCoFLDevice(FedAvgDevice):
+    def __init__(self, device_id):
+        super().__init__(device_id)
+        self._block_selection = []
+
     #!overrides
     def device_training(self):
         self._check_trainable()
@@ -17,6 +22,11 @@ class CoCoFLDevice(FedAvgDevice):
         # reinitialize model and restore state-dict
         state_dict = self._model.state_dict()
         self._model = self._model_class(**kwargs)
+
+        # store block selection of current device
+        block_selections = np.zeros(self._model.n_freezable_layers(),dtype=int) 
+        block_selections[freezing_config] = 1
+        self._block_selection = 1 - block_selections 
 
         # make sure to use CPU in case quantization is used
         # otherwise push tensors to cuda
@@ -67,6 +77,10 @@ class CoCoFLServer(FedAvgServer):
     _device_class = CoCoFLDevice
     _device_evaluation_class = FedAvgEvaluationDevice
 
+    def __init__(self, device_id):
+        super().__init__(device_id)
+        self._measurements_dict['block_selections'] = []
+
     #!overrides
     @staticmethod
     def model_averaging(list_of_state_dicts, eval_device_dict=None):
@@ -94,3 +108,19 @@ class CoCoFLServer(FedAvgServer):
 
         averaged_dict = {k: v for k, v in averaged_dict.items() if all(module_name not in k for module_name in averaging_exceptions)}
         return averaged_dict
+    
+    #!overrides
+    def initialize(self):
+        super().initialize()
+        self._measurements_dict['block_selections'] = np.zeros(self._model[0].n_freezable_layers())
+
+
+    #!overrides
+    def post_round(self, round_n, idxs):
+        super().post_round(round_n, idxs)
+
+        used_devices = [self._devices_list[i] for i in idxs]
+        for device in used_devices:
+            self._measurements_dict['block_selections'] += device._block_selection
+            
+        self._measurements_dict['block_selections'] = list(self._measurements_dict['block_selections'])
