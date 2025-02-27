@@ -50,6 +50,8 @@ class RunConfig():
             return np.asarray(self._measurements[self._property_string])[:, 0]
         elif self._property_string == "data_upload":
             return np.cumsum(np.asanyarray(self._measurements[self._property_string])[:, 0]/(10**9))
+        elif self._property_string == "block_selections":
+            return np.array(self._measurements[self._property_string])
         else:
             raise NotImplementedError
 
@@ -146,6 +148,21 @@ def plot_property(main_run, list_of_other_runs, list_of_equal_keys, save_path=""
 
     fig.savefig(save_path + f"{save_str}.png", bbox_extra_artists=(lgd, text), bbox_inches="tight")
 
+def plot_property_bar(main_run, save_path="", property_string="block_selection"):
+    plt.gcf().clear()
+    fig = plt.figure(1)
+    ax = fig.add_subplot(111)
+
+    block_selections = main_run.get_Y() 
+
+    ax.bar(np.arange(len(block_selections)), block_selections, color='orange')
+
+    ax.set_title("Block selection")
+    ax.set_ylabel("Frequency of block selections")
+    ax.set_xlabel("Block indices (positions)")
+
+    fig.savefig(save_path + f"{property_string}.png", bbox_inches="tight")
+    pass
 
 def plot_config(run_path):
     path_prefix = run_path.split("run_")[0]
@@ -181,6 +198,9 @@ def plot_config(run_path):
     run_cfg_list = list(filter(lambda x: x.config is not None, run_cfg_list))
 
     plot_property(main_run, run_cfg_list, ["session_tag"], save_path=run_path + "/", property_string="loss")
+
+    main_run = RunConfig(run_path, property_string="block_selections")
+    plot_property_bar(main_run, save_path=run_path+"/")
  
 
 
