@@ -162,11 +162,10 @@ def plot_property_bar(main_run, save_path="", property_string="block_selections"
     ax = fig.add_subplot(111)
     x = main_run.get_X() 
     y = main_run.get_Y()
-    print(x,y)
+    
     if (property_string == "cluster_selections"):
         xy = sorted(zip(x, y))
         x, y = zip(*xy)
-    print(x,y)
 
     ax.bar(x, y , color='orange')
 
