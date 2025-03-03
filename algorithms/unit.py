@@ -58,6 +58,7 @@ class UnitServer(CoCoFLServer):
         super().__init__(storage_path)
         self._n_device_clusters = n_device_clusters
         self.configs = []
+        self._measurements_dict['cluster_selections'] = {}
 
     def initialize_clusters(self, device_constraints, n_clusters):
         device_constraints_numeric = []
@@ -97,7 +98,7 @@ class UnitServer(CoCoFLServer):
                     chunk_indices.append(np.resize(np.arange(len(cluster_configs)),len(cluster_constraints)))
                     logging.info(f"Chosen unit for cluster {label}: {unit}")
                     break
-        # how to know number of configs per unit? just look at length of config 
+        # how to know number of configs per unit? just look at length of configs-per-unit list
         return kmeans.labels_, chunk_indices
     
     #!overrides
@@ -153,11 +154,16 @@ class UnitServer(CoCoFLServer):
     
     #!overrides
     def init_nn_models(self,idxs):
+        num_blocks = self._model[0].n_freezable_layers()
         for dev_idx in idxs:
             device = self._devices_list[dev_idx]
             device.init_model()
             device.set_model_state_dict(self._global_model)
-            device.set_config(self.configs[device.cluster][device.chunk_index]) 
+            config = self.configs[device.cluster][device.chunk_index]
+            device.set_config(config) 
+            
+            unit = num_blocks - len(config) # unit is ~ number of blocks trained
+            self._measurements_dict['cluster_selections'][unit] = self._measurements_dict['cluster_selections'].get(unit, 0) + 1
         return
     
     #!overrides

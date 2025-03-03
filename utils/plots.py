@@ -52,11 +52,19 @@ class RunConfig():
             return np.cumsum(np.asanyarray(self._measurements[self._property_string])[:, 0]/(10**9))
         elif self._property_string == "block_selections":
             return np.array(self._measurements[self._property_string])
+        elif self._property_string == "cluster_selections":
+            return list(self._measurements[self._property_string].values())
         else:
             raise NotImplementedError
 
     def get_X(self):
-        return np.asarray(self._measurements[self._property_string])[:, 1]
+        if self._property_string == "block_selections":
+            return np.arange(len(self.get_Y()))
+        elif self._property_string == "cluster_selections":
+            x = list(self._measurements[self._property_string].keys())
+            return list(map(int, x))
+        else:
+            return np.asarray(self._measurements[self._property_string])[:, 1]
 
     def get_max(self):
             return np.max(np.asarray(self._measurements["accuracy"])[:, 0])
@@ -148,18 +156,29 @@ def plot_property(main_run, list_of_other_runs, list_of_equal_keys, save_path=""
 
     fig.savefig(save_path + f"{save_str}.png", bbox_extra_artists=(lgd, text), bbox_inches="tight")
 
-def plot_property_bar(main_run, save_path="", property_string="block_selection"):
+def plot_property_bar(main_run, save_path="", property_string="block_selections"):
     plt.gcf().clear()
     fig = plt.figure(1)
     ax = fig.add_subplot(111)
+    x = main_run.get_X() 
+    y = main_run.get_Y()
+    print(x,y)
+    if (property_string == "cluster_selections"):
+        xy = sorted(zip(x, y))
+        x, y = zip(*xy)
+    print(x,y)
 
-    block_selections = main_run.get_Y() 
+    ax.bar(x, y , color='orange')
 
-    ax.bar(np.arange(len(block_selections)), block_selections, color='orange')
+    if property_string == "block_selections":
+        ax.set_title("Block selection")
+        ax.set_ylabel("Frequency of block selections")
+        ax.set_xlabel("Block indices (positions)")
+    elif property_string == "cluster_selections":
+        ax.set_title("Unit selection")
+        ax.set_ylabel("Frequency of unit selections")
+        ax.set_xlabel("Units (unit = number of blocks trained by device)")
 
-    ax.set_title("Block selection")
-    ax.set_ylabel("Frequency of block selections")
-    ax.set_xlabel("Block indices (positions)")
 
     fig.savefig(save_path + f"{property_string}.png", bbox_inches="tight")
     pass
@@ -201,6 +220,9 @@ def plot_config(run_path):
 
     main_run = RunConfig(run_path, property_string="block_selections")
     plot_property_bar(main_run, save_path=run_path+"/")
+
+    main_run = RunConfig(run_path, property_string="cluster_selections")
+    plot_property_bar(main_run, save_path=run_path+"/", property_string="cluster_selections")
  
 
 
