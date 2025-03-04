@@ -166,6 +166,7 @@ def plot_property_bar(main_run, save_path="", property_string="block_selections"
     if (property_string == "cluster_selections"):
         xy = sorted(zip(x, y))
         x, y = zip(*xy)
+        x = list(map(str, x))
 
     ax.bar(x, y , color='orange')
 
@@ -221,7 +222,8 @@ def plot_config(run_path):
     plot_property_bar(main_run, save_path=run_path+"/")
 
     main_run = RunConfig(run_path, property_string="cluster_selections")
-    plot_property_bar(main_run, save_path=run_path+"/", property_string="cluster_selections")
+    if "cluster_selections" in main_run._measurements.keys():
+        plot_property_bar(main_run, save_path=run_path+"/", property_string="cluster_selections")
  
 
 
