@@ -11,7 +11,7 @@ import torch.nn.functional as F
 import json
 
 from nets.QuantizedNets.ResNet.training import InputLayer
-from nets.QuantizedNets.utils.utils import filter_table, filter_unit_max, filter_table_unit, get_units
+from nets.QuantizedNets.utils.utils import filter_table, filter_unit_max, filter_table_unit, get_units, get_resources_unit
 
 with open('nets/QuantizedNets/ResNet/tables/table__CoCoFL_arm_QResNet18.json', 'r') as fd:
     _g_table_qresnet18 = json.load(fd)
