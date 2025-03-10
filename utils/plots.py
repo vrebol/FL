@@ -156,6 +156,75 @@ def plot_property(main_run, list_of_other_runs, list_of_equal_keys, save_path=""
 
     fig.savefig(save_path + f"{save_str}.png", bbox_extra_artists=(lgd, text), bbox_inches="tight")
 
+def plot_property_folder(list_of_runs, list_of_equal_keys, save_path="", property_string="accuracy"):
+    runs = list_of_runs
+    runs = list(filter(lambda x: list_of_equal_keys[0] in x.keys(), runs))
+    main_run = runs[0]
+    for key in list_of_equal_keys:
+        runs = list(filter(lambda run: run[key] == main_run[key], runs))
+    runs = list(sorted(runs, key=lambda run: run.get_max(), reverse=True))
+
+    plt.gcf().clear()
+    fig = plt.figure(1)
+    ax = fig.add_subplot(111)
+
+    unique = list(set(runs))
+    unique = list(sorted(unique, key=lambda run: run.get_max(), reverse=True))
+    for unique_run in unique:
+        descr = f"avg_max: {unique_run.get_max()}\n"
+        for key in unique_run.config:
+            for run in unique:
+                if not key in run or (unique_run[key] != run[key] and key != property_string):
+                    descr += f"{key} : {unique_run[key]} " + "\n"
+                    break
+        Y = [run.get_Y() for run in runs if run == unique_run]
+        measurements = [run.get_Y() for run in runs if run == unique_run]
+        X = [run.get_X() for run in runs if run == unique_run]
+
+        max_common_length = min([len(item) for item in Y])
+        measurements = [item[0:max_common_length] for item in measurements]
+
+        avg = np.mean(measurements, axis=0)
+        std = np.std(measurements, axis=0)
+
+        if len(measurements) > 1:
+            # if unique_run == main_run:
+            #     p = ax.plot(main_run.get_X(), main_run.get_Y(), linewidth=3.0, label=descr)
+            # else:
+            p = ax.plot(0, 0, label=descr)
+            ax.fill_between(X[0][0:max_common_length],
+                            avg+std, avg-std, alpha=0.25, color=p[0].get_color())
+        else:
+            linewidth = 1.0
+            ax.plot(unique_run.get_X(), unique_run.get_Y(), linewidth=linewidth, label=descr)
+
+    handles, labels = ax.get_legend_handles_labels()
+    lgd = ax.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, -0.15))
+
+    title_str = ""
+    for key in list_of_equal_keys:
+        title_str += f"{key} : {main_run[key]}\n"
+
+    ax.set_title(title_str)
+    text = ax.text(-0.3, 1.05, " ", transform=ax.transAxes)
+    ax.grid("on")
+
+    if property_string == "data_upload":
+        ax.set_ylabel("Required Communication in Gigabyte")
+        ax.set_xlabel("FL rounds")
+    else:
+        ax.set_ylabel(property_string)
+        ax.set_xlabel("FL rounds")
+
+    if property_string == "data_upload":
+        ax.set_yscale("log")
+        ax.grid(which="both", axis="y")
+    save_str = property_string + "_"
+    for key in list_of_equal_keys:
+        save_str += str(key) + "_"
+
+    fig.savefig(save_path + f"{save_str}.png", bbox_extra_artists=(lgd, text), bbox_inches="tight")
+
 def plot_property_bar(main_run, save_path="", property_string="block_selections"):
     plt.gcf().clear()
     fig = plt.figure(1)
@@ -225,6 +294,16 @@ def plot_config(run_path):
     if "cluster_selections" in main_run._measurements.keys():
         plot_property_bar(main_run, save_path=run_path+"/", property_string="cluster_selections")
  
+def plot_config_folder(path_prefix):
+
+    run_paths = os.listdir(path_prefix)
+    run_paths = list(filter(lambda x: x.startswith("run_"), run_paths))
+    run_cfg_list = [RunConfig(path_prefix + path) for path in run_paths]
+    run_cfg_list = list(filter(lambda x: x.config is not None, run_cfg_list))
+
+    plot_property_folder(run_cfg_list, ["network","device_distribution","data_distribution"], save_path=path_prefix, property_string="accuracy")
+    plot_property_folder(run_cfg_list, ["network","device_distribution","data_distribution"], save_path=path_prefix, property_string="loss")
+
 
 
 if __name__ == "__main__":
