@@ -252,6 +252,77 @@ def plot_property_bar(main_run, save_path="", property_string="block_selections"
     fig.savefig(save_path + f"{property_string}.png", bbox_inches="tight")
     pass
 
+def plot_property_bar_folder(list_of_runs, list_of_equal_keys, save_path="", property_string="block_selections"):
+    runs = list_of_runs
+    runs = list(filter(lambda x: list_of_equal_keys[0] in x.keys(), runs))
+    # filter out the runs with missing measurements (only UnitFL might have cluster_selections measurements)
+    runs = list(filter(lambda x: property_string in x._measurements, runs))
+    main_run = runs[0]
+    for key in list_of_equal_keys:
+        runs = list(filter(lambda run: run[key] == main_run[key], runs))
+    runs = list(sorted(runs, key=lambda run: run.get_max(), reverse=True))
+
+    plt.gcf().clear()
+    fig = plt.figure(1)
+    ax = fig.add_subplot(111)
+
+    unique = list(set(runs))
+    unique = list(sorted(unique, key=lambda run: run.get_max(), reverse=True))
+    bar_width = 0.3
+    offset = 0
+    for unique_run in unique:
+        descr = f"avg_max: {unique_run.get_max()}\n"
+        for key in unique_run.config:
+            for run in unique:
+                if not key in run or (unique_run[key] != run[key] and key != property_string):
+                    descr += f"{key} : {unique_run[key]} " + "\n"
+                    break
+        x = unique_run.get_X() 
+        y = unique_run.get_Y()
+        
+        # print(x)
+        # print(y)
+        
+        if (property_string == "cluster_selections"):
+            xy = sorted(zip(x, y))
+            x, y = zip(*xy)
+            x_labels = list(map(str, x))
+    
+        x  = [num+offset for num in x]
+        ax.bar(x, y, bar_width, label=descr)
+        offset += bar_width
+
+    handles, labels = ax.get_legend_handles_labels()
+    lgd = ax.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, -0.15))
+
+    title_str = ""
+    for key in list_of_equal_keys:
+        title_str += f"{key} : {main_run[key]}\n"
+
+    ax.set_title(title_str)
+    text = ax.text(-0.3, 1.05, " ", transform=ax.transAxes)
+    ax.grid("on")
+    #ax.xticks(x + offset/2,x)
+    # ax.set_xticklabels(x_labels, fontdict=None, minor=False)
+
+
+    if property_string == "block_selections":
+        # ax.set_title("Block selection")
+        ax.set_ylabel("Frequency of block selections")
+        ax.set_xlabel("Block indices (positions)")
+    elif property_string == "cluster_selections":
+        # ax.set_title("Unit selection")
+        ax.set_ylabel("Frequency of unit selections")
+        ax.set_xlabel("Units (unit = number of blocks trained by device)")
+
+
+    save_str = property_string + "_"
+    for key in list_of_equal_keys:
+        save_str += str(key) + "_"
+
+    fig.savefig(save_path + f"{save_str}.png", bbox_extra_artists=(lgd, text), bbox_inches="tight")
+    pass
+
 def plot_config(run_path):
     path_prefix = run_path.split("run_")[0]
 
@@ -302,8 +373,30 @@ def plot_config_folder(path_prefix):
     run_cfg_list = list(filter(lambda x: x.config is not None, run_cfg_list))
 
     plot_property_folder(run_cfg_list, ["network","device_distribution","data_distribution"], save_path=path_prefix, property_string="accuracy")
+
+    run_paths = os.listdir(path_prefix)
+    run_paths = list(filter(lambda x: x.startswith("run_"), run_paths))
+    run_cfg_list = [RunConfig(path_prefix + path, property_string="loss")
+                    for path in run_paths]
+    run_cfg_list = list(filter(lambda x: x.config is not None, run_cfg_list))
+
     plot_property_folder(run_cfg_list, ["network","device_distribution","data_distribution"], save_path=path_prefix, property_string="loss")
 
+    run_paths = os.listdir(path_prefix)
+    run_paths = list(filter(lambda x: x.startswith("run_"), run_paths))
+    run_cfg_list = [RunConfig(path_prefix + path, property_string="block_selections")
+                    for path in run_paths]
+    run_cfg_list = list(filter(lambda x: x.config is not None, run_cfg_list))
+
+    plot_property_bar_folder(run_cfg_list, ["network","device_distribution","data_distribution"], save_path=path_prefix,property_string="block_selections")
+    
+    run_paths = os.listdir(path_prefix)
+    run_paths = list(filter(lambda x: x.startswith("run_"), run_paths))
+    run_cfg_list = [RunConfig(path_prefix + path, property_string="cluster_selections")
+                    for path in run_paths]
+    run_cfg_list = list(filter(lambda x: x.config is not None, run_cfg_list))
+
+    plot_property_bar_folder(run_cfg_list, ["network","device_distribution","data_distribution"], save_path=path_prefix,property_string="cluster_selections")
 
 
 if __name__ == "__main__":
