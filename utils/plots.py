@@ -50,19 +50,14 @@ class RunConfig():
             return np.asarray(self._measurements[self._property_string])[:, 0]
         elif self._property_string == "data_upload":
             return np.cumsum(np.asanyarray(self._measurements[self._property_string])[:, 0]/(10**9))
-        elif self._property_string == "block_selections":
+        elif self._property_string in ["block_selections", "cluster_selections"]:
             return np.array(self._measurements[self._property_string])
-        elif self._property_string == "cluster_selections":
-            return list(self._measurements[self._property_string].values())
         else:
             raise NotImplementedError
 
     def get_X(self):
-        if self._property_string == "block_selections":
+        if self._property_string in ["block_selections", "cluster_selections"] :
             return np.arange(len(self.get_Y()))
-        elif self._property_string == "cluster_selections":
-            x = list(self._measurements[self._property_string].keys())
-            return list(map(int, x))
         else:
             return np.asarray(self._measurements[self._property_string])[:, 1]
 
@@ -164,9 +159,15 @@ def plot_property_bar(main_run, save_path="", property_string="block_selections"
     y = main_run.get_Y()
     
     if (property_string == "cluster_selections"):
-        xy = sorted(zip(x, y))
-        x, y = zip(*xy)
-        x = list(map(str, x))
+        #filter out zero values
+        valid_indices = (y != 0)  # Boolean mask for non-zero values
+        x = x[valid_indices]
+        x += 1 # correct number of layers trained (indices start with 0)
+        y = y[valid_indices]
+        x = list(map(str,x))
+    #     xy = sorted(zip(x, y))
+    #     x, y = zip(*xy)
+    #     x = list(map(str, x))
 
     ax.bar(x, y , color='orange')
 

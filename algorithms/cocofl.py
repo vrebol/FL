@@ -9,6 +9,7 @@ class CoCoFLDevice(FedAvgDevice):
     def __init__(self, device_id):
         super().__init__(device_id)
         self._block_selection = []
+        self._cluster_selection = []
 
     #!overrides
     def device_training(self):
@@ -23,10 +24,17 @@ class CoCoFLDevice(FedAvgDevice):
         state_dict = self._model.state_dict()
         self._model = self._model_class(**kwargs)
 
+        model_len = self._model.n_freezable_layers()
+
         # store block selection of current device
-        block_selections = np.zeros(self._model.n_freezable_layers(),dtype=int) 
+        block_selections = np.zeros(model_len,dtype=int) 
         block_selections[freezing_config] = 1
         self._block_selection = 1 - block_selections 
+
+        # store cluster selection of current device
+        cluster_selections = np.zeros(model_len,dtype=int) 
+        cluster_selections[model_len-len(freezing_config)-1] = 1
+        self._cluster_selection = cluster_selections
 
         # make sure to use CPU in case quantization is used
         # otherwise push tensors to cuda
@@ -80,6 +88,8 @@ class CoCoFLServer(FedAvgServer):
     def __init__(self, device_id):
         super().__init__(device_id)
         self._measurements_dict['block_selections'] = []
+        self._measurements_dict['cluster_selections'] = []
+
 
     #!overrides
     @staticmethod
@@ -103,7 +113,7 @@ class CoCoFLServer(FedAvgServer):
                     if key.endswith('op_scale') or key.endswith('op_scale_bw'):
                         averaged_dict[key] = torch.atleast_1d(torch.mean(torch.stack(list_of_averageable_params), dim=0))
                     else:
-                        # Averging of trained layers according to Algorithm2 in the paper
+                        # Averaging of trained layers according to Algorithm2 in the paper
                         averaged_dict[key] = r * torch.mean(torch.stack(list_of_averageable_params), dim=0) + (1 - r)*averaged_dict[key]
 
         averaged_dict = {k: v for k, v in averaged_dict.items() if all(module_name not in k for module_name in averaging_exceptions)}
@@ -113,6 +123,7 @@ class CoCoFLServer(FedAvgServer):
     def initialize(self):
         super().initialize()
         self._measurements_dict['block_selections'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['cluster_selections'] = np.zeros(self._model[0].n_freezable_layers())
 
 
     #!overrides
@@ -122,5 +133,7 @@ class CoCoFLServer(FedAvgServer):
         used_devices = [self._devices_list[i] for i in idxs]
         for device in used_devices:
             self._measurements_dict['block_selections'] += device._block_selection
+            self._measurements_dict['cluster_selections'] += device._cluster_selection
             
         self._measurements_dict['block_selections'] = list(self._measurements_dict['block_selections'])
+        self._measurements_dict['cluster_selections'] = list(self._measurements_dict['cluster_selections'])

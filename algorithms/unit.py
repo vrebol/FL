@@ -29,10 +29,18 @@ class UnitDevice(CoCoFLDevice):
         state_dict = self._model.state_dict()
         self._model = self._model_class(**kwargs)
 
+
+        model_len = self._model.n_freezable_layers()
+
         # store block selection of current device
-        block_selections = np.zeros(self._model.n_freezable_layers(),dtype=int) 
+        block_selections = np.zeros(model_len,dtype=int) 
         block_selections[self.config] = 1
         self._block_selection = 1 - block_selections 
+
+        # store cluster selection of current device
+        cluster_selections = np.zeros(model_len,dtype=int) 
+        cluster_selections[model_len-len(self.config)-1] = 1
+        self._cluster_selection = cluster_selections
 
         # make sure to use CPU in case quantization is used
         # otherwise push tensors to cuda
@@ -58,7 +66,7 @@ class UnitServer(CoCoFLServer):
         super().__init__(storage_path)
         self._n_device_clusters = n_device_clusters
         self.configs = []
-        self._measurements_dict['cluster_selections'] = {}
+        self._measurements_dict['cluster_selections'] = []
 
     def initialize_clusters(self, device_constraints, n_clusters):
         device_constraints_numeric = []
@@ -144,6 +152,7 @@ class UnitServer(CoCoFLServer):
             print(self._group_distributions)
 
         self._measurements_dict['block_selections'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['cluster_selections'] = np.zeros(self._model[0].n_freezable_layers())
 
         # self._model[0].plot_configs_unit(3,"time",self._storage_path)
 
@@ -154,16 +163,12 @@ class UnitServer(CoCoFLServer):
     
     #!overrides
     def init_nn_models(self,idxs):
-        num_blocks = self._model[0].n_freezable_layers()
         for dev_idx in idxs:
             device = self._devices_list[dev_idx]
             device.init_model()
             device.set_model_state_dict(self._global_model)
             config = self.configs[device.cluster][device.chunk_index]
             device.set_config(config) 
-            
-            unit = num_blocks - len(config) # unit is ~ number of blocks trained
-            self._measurements_dict['cluster_selections'][unit] = self._measurements_dict['cluster_selections'].get(unit, 0) + 1
         return
     
     #!overrides
