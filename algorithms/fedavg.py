@@ -31,6 +31,7 @@ class FedAvgDevice():
         self.resources = None
 
         self._torch_device = None
+        self._size = -1 # 0 = little resources, 1 = medium resources, 2 = high resources 
 
     def set_model(self, model_class, kwargs):
         self._model_kwargs = kwargs
@@ -354,6 +355,7 @@ class FedAvgServer(ABC):
 
         self._devices_list = [self._device_class(i) for i in range(self.n_devices)]
 
+        device_size = 0
         for i, device in enumerate(self._devices_list):
             device.set_model(self._model[i], self._model_kwargs[i])
             device.set_train_data(torch.utils.data.Subset(self._train_data.dataset, idxs_list[i]))
@@ -361,8 +363,12 @@ class FedAvgServer(ABC):
             device.set_optimizer(self._optimizer, self._optimizer_kwargs)
             device.set_torch_device(self.torch_device)
 
+            if i == 33 or i == 66:
+                device_size += 1
+
             if self._device_constraints is not None:
                 device.resources = self._device_constraints[i]
+                device._size = device_size
 
         self._devices_list[0].init_model()
         self._global_model = copy.deepcopy(self._devices_list[0]._model.state_dict())

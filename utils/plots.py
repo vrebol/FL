@@ -50,13 +50,13 @@ class RunConfig():
             return np.asarray(self._measurements[self._property_string])[:, 0]
         elif self._property_string == "data_upload":
             return np.cumsum(np.asanyarray(self._measurements[self._property_string])[:, 0]/(10**9))
-        elif self._property_string in ["block_selections", "cluster_selections"]:
+        elif "selections" in self._property_string:
             return np.array(self._measurements[self._property_string])
         else:
             raise NotImplementedError
 
     def get_X(self):
-        if self._property_string in ["block_selections", "cluster_selections"] :
+        if "selections" in self._property_string:
             return np.arange(len(self.get_Y()))
         else:
             return np.asarray(self._measurements[self._property_string])[:, 1]
@@ -158,7 +158,7 @@ def plot_property_bar(main_run, save_path="", property_string="block_selections"
     x = main_run.get_X() 
     y = main_run.get_Y()
     
-    if (property_string == "cluster_selections"):
+    if ("cluster_selections" in property_string):
         #filter out zero values
         valid_indices = (y != 0)  # Boolean mask for non-zero values
         x = x[valid_indices]
@@ -171,12 +171,25 @@ def plot_property_bar(main_run, save_path="", property_string="block_selections"
 
     ax.bar(x, y , color='orange')
 
-    if property_string == "block_selections":
-        ax.set_title("Block selection")
+    if "block_selections" in property_string:
+        suffix = property_string.split("block_selections")
+        if suffix[1] != '':
+            suffix = suffix[1][1:]
+        else:
+            suffix = ''
+
+        ax.set_title("Block selection (" + suffix + ")")
         ax.set_ylabel("Frequency of block selections")
         ax.set_xlabel("Block indices (positions)")
-    elif property_string == "cluster_selections":
-        ax.set_title("Unit selection")
+    elif "cluster_selections" in property_string:
+        suffix = property_string.split("cluster_selections")
+        if suffix[1] != '':
+            suffix = suffix[1][1:]
+        else:
+            suffix = ''
+        
+        ax.set_title("Unit selection (" + suffix + ")")
+
         ax.set_ylabel("Frequency of unit selections")
         ax.set_xlabel("Units (unit = number of blocks trained by device)")
 
@@ -222,9 +235,33 @@ def plot_config(run_path):
     main_run = RunConfig(run_path, property_string="block_selections")
     plot_property_bar(main_run, save_path=run_path+"/")
 
-    main_run = RunConfig(run_path, property_string="cluster_selections")
+    if "block_selections_small" in main_run._measurements.keys():
+        main_run = RunConfig(run_path, property_string="block_selections_small")
+        plot_property_bar(main_run, save_path=run_path+"/", property_string="block_selections_small")
+
+    if "block_selections_medium" in main_run._measurements.keys():
+        main_run = RunConfig(run_path, property_string="block_selections_medium")
+        plot_property_bar(main_run, save_path=run_path+"/", property_string="block_selections_medium")
+
+    if "block_selections_large" in main_run._measurements.keys():
+        main_run = RunConfig(run_path, property_string="block_selections_large")
+        plot_property_bar(main_run, save_path=run_path+"/", property_string="block_selections_large")
+
     if "cluster_selections" in main_run._measurements.keys():
+        main_run = RunConfig(run_path, property_string="cluster_selections")
         plot_property_bar(main_run, save_path=run_path+"/", property_string="cluster_selections")
+
+    if "cluster_selections_small" in main_run._measurements.keys():
+        main_run = RunConfig(run_path, property_string="cluster_selections_small")
+        plot_property_bar(main_run, save_path=run_path+"/", property_string="cluster_selections_small")
+
+    if "cluster_selections_medium" in main_run._measurements.keys():
+        main_run = RunConfig(run_path, property_string="cluster_selections_medium")
+        plot_property_bar(main_run, save_path=run_path+"/", property_string="cluster_selections_medium")
+
+    if "cluster_selections_large" in main_run._measurements.keys():
+        main_run = RunConfig(run_path, property_string="cluster_selections_large")
+        plot_property_bar(main_run, save_path=run_path+"/", property_string="cluster_selections_large")
  
 
 

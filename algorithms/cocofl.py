@@ -122,8 +122,16 @@ class CoCoFLServer(FedAvgServer):
     #!overrides
     def initialize(self):
         super().initialize()
-        self._measurements_dict['block_selections'] = np.zeros(self._model[0].n_freezable_layers())
-        self._measurements_dict['cluster_selections'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['block_selections_small'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['block_selections_medium'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['block_selections_large']= np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['block_selections']= np.zeros(self._model[0].n_freezable_layers())
+
+
+        self._measurements_dict['cluster_selections_small'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['cluster_selections_medium'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['cluster_selections_large'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['cluster_selections']= np.zeros(self._model[0].n_freezable_layers())
 
 
     #!overrides
@@ -134,6 +142,23 @@ class CoCoFLServer(FedAvgServer):
         for device in used_devices:
             self._measurements_dict['block_selections'] += device._block_selection
             self._measurements_dict['cluster_selections'] += device._cluster_selection
+
+            if device._size == 0:
+                self._measurements_dict['block_selections_small'] += device._block_selection
+                self._measurements_dict['cluster_selections_small'] += device._cluster_selection
+            elif device._size == 1:
+                self._measurements_dict['block_selections_medium'] += device._block_selection
+                self._measurements_dict['cluster_selections_medium'] += device._cluster_selection
+            elif device._size == 2:
+                self._measurements_dict['block_selections_large'] += device._block_selection
+                self._measurements_dict['cluster_selections_large'] += device._cluster_selection
+
             
         self._measurements_dict['block_selections'] = list(self._measurements_dict['block_selections'])
+        self._measurements_dict['block_selections_small'] = list(self._measurements_dict['block_selections_small'])
+        self._measurements_dict['block_selections_medium'] = list(self._measurements_dict['block_selections_medium'])
+        self._measurements_dict['block_selections_large'] = list(self._measurements_dict['block_selections_large'])
         self._measurements_dict['cluster_selections'] = list(self._measurements_dict['cluster_selections'])
+        self._measurements_dict['cluster_selections_small'] = list(self._measurements_dict['cluster_selections_small'])
+        self._measurements_dict['cluster_selections_medium'] = list(self._measurements_dict['cluster_selections_medium'])
+        self._measurements_dict['cluster_selections_large'] = list(self._measurements_dict['cluster_selections_large'])
