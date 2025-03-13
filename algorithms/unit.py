@@ -129,6 +129,7 @@ class UnitServer(CoCoFLServer):
             cluster_labels, chunk_indices = self.initialize_clusters(self._device_constraints, self._n_device_clusters)
  
         counter = np.zeros(self._n_device_clusters,dtype=int)
+        device_size = 0
         for i, device in enumerate(self._devices_list):
             device.set_model(self._model[i], self._model_kwargs[i])
             device.set_train_data(torch.utils.data.Subset(self._train_data.dataset, idxs_list[i]))
@@ -136,12 +137,16 @@ class UnitServer(CoCoFLServer):
             device.set_optimizer(self._optimizer, self._optimizer_kwargs)
             device.set_torch_device(self.torch_device)
 
+            if i == 33 or i == 66:
+                device_size += 1
+
             if self._device_constraints is not None:
                 device.resources = self._device_constraints[i]
                 cluster_label = cluster_labels[i]
                 device.cluster = cluster_label
                 device.chunk_index = chunk_indices[cluster_label][counter[cluster_label]]
                 counter[cluster_label] = counter[cluster_label] + 1
+                device._size = device_size
 
         self._devices_list[0].init_model()
         self._global_model = copy.deepcopy(self._devices_list[0]._model.state_dict())
@@ -151,8 +156,16 @@ class UnitServer(CoCoFLServer):
             self._group_distributions = torch.tensor(np.array(self.split_function._group_distributions))
             print(self._group_distributions)
 
-        self._measurements_dict['block_selections'] = np.zeros(self._model[0].n_freezable_layers())
-        self._measurements_dict['cluster_selections'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['block_selections_small'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['block_selections_medium'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['block_selections_large']= np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['block_selections']= np.zeros(self._model[0].n_freezable_layers())
+
+
+        self._measurements_dict['cluster_selections_small'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['cluster_selections_medium'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['cluster_selections_large'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['cluster_selections']= np.zeros(self._model[0].n_freezable_layers())
 
         # self._model[0].plot_configs_unit(3,"time",self._storage_path)
 
