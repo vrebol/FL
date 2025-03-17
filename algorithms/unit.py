@@ -29,10 +29,18 @@ class UnitDevice(CoCoFLDevice):
         state_dict = self._model.state_dict()
         self._model = self._model_class(**kwargs)
 
+
+        model_len = self._model.n_freezable_layers()
+
         # store block selection of current device
-        block_selections = np.zeros(self._model.n_freezable_layers(),dtype=int) 
+        block_selections = np.zeros(model_len,dtype=int) 
         block_selections[self.config] = 1
         self._block_selection = 1 - block_selections 
+
+        # store cluster selection of current device
+        cluster_selections = np.zeros(model_len,dtype=int) 
+        cluster_selections[model_len-len(self.config)-1] = 1
+        self._cluster_selection = cluster_selections
 
         # make sure to use CPU in case quantization is used
         # otherwise push tensors to cuda
@@ -58,7 +66,7 @@ class UnitServer(CoCoFLServer):
         super().__init__(storage_path)
         self._n_device_clusters = n_device_clusters
         self.configs = []
-        self._measurements_dict['cluster_selections'] = {}
+        self._measurements_dict['cluster_selections'] = []
 
     def initialize_clusters(self, device_constraints, n_clusters):
         device_constraints_numeric = []
@@ -121,6 +129,7 @@ class UnitServer(CoCoFLServer):
             cluster_labels, chunk_indices = self.initialize_clusters(self._device_constraints, self._n_device_clusters)
  
         counter = np.zeros(self._n_device_clusters,dtype=int)
+        device_size = 0
         for i, device in enumerate(self._devices_list):
             device.set_model(self._model[i], self._model_kwargs[i])
             device.set_train_data(torch.utils.data.Subset(self._train_data.dataset, idxs_list[i]))
@@ -128,12 +137,16 @@ class UnitServer(CoCoFLServer):
             device.set_optimizer(self._optimizer, self._optimizer_kwargs)
             device.set_torch_device(self.torch_device)
 
+            if i == 33 or i == 66:
+                device_size += 1
+
             if self._device_constraints is not None:
                 device.resources = self._device_constraints[i]
                 cluster_label = cluster_labels[i]
                 device.cluster = cluster_label
                 device.chunk_index = chunk_indices[cluster_label][counter[cluster_label]]
                 counter[cluster_label] = counter[cluster_label] + 1
+                device._size = device_size
 
         self._devices_list[0].init_model()
         self._global_model = copy.deepcopy(self._devices_list[0]._model.state_dict())
@@ -143,7 +156,16 @@ class UnitServer(CoCoFLServer):
             self._group_distributions = torch.tensor(np.array(self.split_function._group_distributions))
             print(self._group_distributions)
 
-        self._measurements_dict['block_selections'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['block_selections_small'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['block_selections_medium'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['block_selections_large']= np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['block_selections']= np.zeros(self._model[0].n_freezable_layers())
+
+
+        self._measurements_dict['cluster_selections_small'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['cluster_selections_medium'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['cluster_selections_large'] = np.zeros(self._model[0].n_freezable_layers())
+        self._measurements_dict['cluster_selections']= np.zeros(self._model[0].n_freezable_layers())
 
         # self._model[0].plot_configs_unit(3,"time",self._storage_path)
 
@@ -154,16 +176,12 @@ class UnitServer(CoCoFLServer):
     
     #!overrides
     def init_nn_models(self,idxs):
-        num_blocks = self._model[0].n_freezable_layers()
         for dev_idx in idxs:
             device = self._devices_list[dev_idx]
             device.init_model()
             device.set_model_state_dict(self._global_model)
             config = self.configs[device.cluster][device.chunk_index]
             device.set_config(config) 
-            
-            unit = num_blocks - len(config) # unit is ~ number of blocks trained
-            self._measurements_dict['cluster_selections'][unit] = self._measurements_dict['cluster_selections'].get(unit, 0) + 1
         return
     
     #!overrides
