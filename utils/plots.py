@@ -335,8 +335,7 @@ def plot_property_bar_folder(list_of_runs, list_of_equal_keys, save_path="", pro
     save_str = property_string + "_"
     for key in list_of_equal_keys:
         save_str += str(key) + "_"
-
-    fig.savefig(save_path + f"{save_str}.png", bbox_extra_artists=(lgd, text), bbox_inches="tight")
+    fig.savefig(save_path + f"{save_str[:-1]}.png", bbox_extra_artists=(lgd, text), bbox_inches="tight")
     pass
 
 def plot_config(run_path):
@@ -414,28 +413,41 @@ def plot_config_folder(path_prefix):
 
     plot_property_folder(run_cfg_list, ["network","device_distribution","data_distribution"], save_path=path_prefix, property_string="accuracy")
 
-    run_paths = os.listdir(path_prefix)
-    run_paths = list(filter(lambda x: x.startswith("run_"), run_paths))
     run_cfg_list = [RunConfig(path_prefix + path, property_string="loss")
                     for path in run_paths]
     run_cfg_list = list(filter(lambda x: x.config is not None, run_cfg_list))
 
     plot_property_folder(run_cfg_list, ["network","device_distribution","data_distribution"], save_path=path_prefix, property_string="loss")
 
-    run_paths = os.listdir(path_prefix)
-    run_paths = list(filter(lambda x: x.startswith("run_"), run_paths))
     run_cfg_list = [RunConfig(path_prefix + path, property_string="block_selections")
                     for path in run_paths]
     run_cfg_list = list(filter(lambda x: x.config is not None, run_cfg_list))
     plot_property_bar_folder(run_cfg_list, ["network","device_distribution","data_distribution"], save_path=path_prefix,property_string="block_selections")
     
-    run_paths = os.listdir(path_prefix)
-    run_paths = list(filter(lambda x: x.startswith("run_"), run_paths))
     run_cfg_list = [RunConfig(path_prefix + path, property_string="cluster_selections")
                     for path in run_paths]
     run_cfg_list = list(filter(lambda x: x.config is not None, run_cfg_list))
     plot_property_bar_folder(run_cfg_list, ["network","device_distribution","data_distribution"], save_path=path_prefix,property_string="cluster_selections")
 
+    for suffix in ["small", "medium", "large"]:
+        cur_ps = "cluster_selections_" + suffix
+        
+        run_paths = list(filter(lambda x: x.startswith("run_"), run_paths))
+        run_cfg_list = [RunConfig(path_prefix + path, property_string=cur_ps)
+                        for path in run_paths]
+        run_cfg_list = list(filter(lambda x: x.config is not None, run_cfg_list))
+        plot_property_bar_folder(run_cfg_list, ["network","device_distribution","data_distribution"], save_path=path_prefix,property_string=cur_ps)
+
+
+        cur_ps = "block_selections_" + suffix
+
+        run_paths = list(filter(lambda x: x.startswith("run_"), run_paths))
+        run_cfg_list = [RunConfig(path_prefix + path, property_string=cur_ps)
+                        for path in run_paths]
+        run_cfg_list = list(filter(lambda x: x.config is not None, run_cfg_list))
+        plot_property_bar_folder(run_cfg_list, ["network","device_distribution","data_distribution"], save_path=path_prefix,property_string=cur_ps)
+
+    
 
 if __name__ == "__main__":
 
