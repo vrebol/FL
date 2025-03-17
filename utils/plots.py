@@ -257,6 +257,8 @@ def plot_property_bar_folder(list_of_runs, list_of_equal_keys, save_path="", pro
     runs = list(filter(lambda x: list_of_equal_keys[0] in x.keys(), runs))
     # filter out the runs with missing measurements (only UnitFL might have cluster_selections measurements)
     runs = list(filter(lambda x: property_string in x._measurements, runs))
+    if len(runs) == 0:
+        return
     main_run = runs[0]
     for key in list_of_equal_keys:
         runs = list(filter(lambda run: run[key] == main_run[key], runs))
@@ -387,7 +389,6 @@ def plot_config_folder(path_prefix):
     run_cfg_list = [RunConfig(path_prefix + path, property_string="block_selections")
                     for path in run_paths]
     run_cfg_list = list(filter(lambda x: x.config is not None, run_cfg_list))
-
     plot_property_bar_folder(run_cfg_list, ["network","device_distribution","data_distribution"], save_path=path_prefix,property_string="block_selections")
     
     run_paths = os.listdir(path_prefix)
@@ -395,7 +396,6 @@ def plot_config_folder(path_prefix):
     run_cfg_list = [RunConfig(path_prefix + path, property_string="cluster_selections")
                     for path in run_paths]
     run_cfg_list = list(filter(lambda x: x.config is not None, run_cfg_list))
-
     plot_property_bar_folder(run_cfg_list, ["network","device_distribution","data_distribution"], save_path=path_prefix,property_string="cluster_selections")
 
 
