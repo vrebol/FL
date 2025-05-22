@@ -3,6 +3,7 @@
 
 
 > Vid Rebol
+
 > Forked from CoCoFL: Communication- and Computation-Aware Federated Learning via Partial NN Freezing and Quantization (https://openreview.net/pdf?id=XJIg4kQbkv)
 
 
