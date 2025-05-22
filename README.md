@@ -1,10 +1,9 @@
-# CoCoFL: Communication- and Computation-Aware Federated Learning via Partial NN Freezing and Quantization
+# UnitFL
+## In-advance task distribution of federated learning for heterogenous devices with layer freezing
 
 
-> Kilian Pfeiffer, Martin Rapp, Ramin Khalili, Jörg Henkel  
-> CoCoFL: Communication- and Computation-Aware Federated Learning via Partial NN Freezing and Quantization  
-> in Transactions on Machine Learning Research (TMLR) 06/2023  
-> https://openreview.net/pdf?id=XJIg4kQbkv
+> Vid Rebol
+> Forked from CoCoFL: Communication- and Computation-Aware Federated Learning via Partial NN Freezing and Quantization (https://openreview.net/pdf?id=XJIg4kQbkv)
 
 
 ![](src/figure1.png)
